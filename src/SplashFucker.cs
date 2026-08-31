@@ -2,7 +2,6 @@
 using Il2Cpp;
 using MelonLoader;
 using UnityEngine;
-
 namespace TFROnlineMenu;
 
 [HarmonyPatch(typeof(SplashScript), nameof(SplashScript.Start))]
@@ -19,7 +18,6 @@ internal static class SplashSkip
     static void Tick(SplashScript splash)
     {
         if (!splash) UnFuck();
-
         if (!Input.anyKeyDown) return;
         splash.CancelInvoke();
         splash.EndSplash();
