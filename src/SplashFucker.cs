@@ -5,17 +5,17 @@ using UnityEngine;
 namespace TFROnlineMenu;
 
 [HarmonyPatch(typeof(SplashScript), nameof(SplashScript.Start))]
-internal static class SplashSkip
+internal static class SplashFucker
 {
-    static LemonAction? _tick;
+    static LemonAction? _fuck;
 
     static void Postfix(SplashScript __instance)
     {
-        _tick = () => Tick(__instance);
-        MelonEvents.OnUpdate.Subscribe(_tick);
+        _fuck = () => Fuck(__instance);
+        MelonEvents.OnUpdate.Subscribe(_fuck);
     }
 
-    static void Tick(SplashScript splash)
+    static void Fuck(SplashScript splash)
     {
         if (!splash) UnFuck();
         if (!Input.anyKeyDown) return;
@@ -25,8 +25,8 @@ internal static class SplashSkip
 
     static void UnFuck()
     {
-        if (_tick is null) return;
-        MelonEvents.OnUpdate.Unsubscribe(_tick);
-        _tick = null;
+        if (_fuck is null) return;
+        MelonEvents.OnUpdate.Unsubscribe(_fuck);
+        _fuck = null;
     }
 }
