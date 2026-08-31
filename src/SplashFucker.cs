@@ -11,6 +11,13 @@ internal static class SplashFucker
 
     static void Postfix(SplashScript __instance)
     {
+        if (Application.isBatchMode)
+        {
+            __instance.CancelInvoke();
+            __instance.EndSplash();
+            return;
+        }
+
         _fuck = () => Fuck(__instance);
         MelonEvents.OnUpdate.Subscribe(_fuck);
     }
