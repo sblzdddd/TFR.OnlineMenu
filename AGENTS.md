@@ -6,11 +6,15 @@ MelonLoader IL2CPP mod for Touhou Fumo Racing. Game logic lives in native `GameA
 
 | Path | Role |
 | --- | --- |
-| `../GameAssembly.dll.i64` | Analyzed IDA 9.2 database (structs + names already loaded) |
-| `../GameAssembly.dll` | IL2CPP native binary |
-| `../MelonLoader/Il2CppAssemblies/Assembly-CSharp.dll` | Il2CppInterop wrappers for **game** C# (`Il2Cpp.*`) |
-| `../Mods/` | MelonLoader mod output (`TFR.OnlineMenu.dll`) |
-| `OnlineMenuMod.cs` | Mod source |
+| `../TFR_OL/GameAssembly.dll.i64` | Analyzed IDA 9.2 database (structs + names already loaded) |
+| `../TFR_OL/modded test/GameAssembly.dll` | IL2CPP native binary |
+| `../TFR_OL/modded test/MelonLoader/Il2CppAssemblies/Assembly-CSharp.dll` | Il2CppInterop wrappers for **game** C# (`Il2Cpp.*`) |
+| `../TFR_OL/modded test/Mods/` | MelonLoader mod output (`TFR.OnlineMenu.dll`) |
+| `src/OnlineMenuMod.cs` | Melon lifecycle and menu UI |
+| `src/NetworkSession.cs` | Network session setup and teardown |
+| `src/LocalInput.cs` | Local input binding and possession |
+| `src/RaceSession.cs` | QuickRace setup, start, and cleanup |
+| `src/InputPatches.cs` | HarmonyX input lifecycle patches |
 | `main.py` | Headless Hex-Rays dump via [IDA Domain](https://ida-domain.docs.hex-rays.com/llms.txt) |
 
 ## IDA Domain (library mode)
@@ -22,7 +26,7 @@ from pathlib import Path
 from ida_domain import Database
 from ida_domain.database import IdaCommandOptions
 
-db_path = Path(__file__).resolve().parent.parent / "GameAssembly.dll.i64"
+db_path = Path(__file__).resolve().parent.parent / "TFR_OL" / "GameAssembly.dll.i64"
 opts = IdaCommandOptions(auto_analysis=False, new_database=False)
 with Database.open(str(db_path), opts, save_on_close=False) as db:
     func = db.functions.get_by_name("FRNetworkManager$$OnStartServer")
@@ -94,4 +98,7 @@ Use existing structs (`db.types.get_by_name`) instead of inventing field offsets
 
 ## Build
 
-`dotnet build` writes `TFR.OnlineMenu.dll` to `../Mods/` (MelonLoader picks it up from there). Do not copy Unity / Il2Cpp interop assemblies into `Mods/`.
+`dotnet build` uses `../TFR_OL/modded test` as `GameRoot` and writes
+`TFR.OnlineMenu.dll` to that installation's `Mods/` directory. Override a different
+installation with `dotnet build -p:GameRoot="X:\path\to\game"`. Do not copy Unity /
+Il2Cpp interop assemblies into `Mods/`.

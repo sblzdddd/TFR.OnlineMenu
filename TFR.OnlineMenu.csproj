@@ -7,7 +7,8 @@
     <AssemblyName>TFR.OnlineMenu</AssemblyName>
     <RootNamespace>TFROnlineMenu</RootNamespace>
     <DebugType>portable</DebugType>
-    <OutputPath>..\Mods\</OutputPath>
+    <GameRoot Condition="'$(GameRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\TFR_OL\modded test'))</GameRoot>
+    <OutputPath>$(GameRoot)\Mods\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -15,63 +16,63 @@
 
   <ItemGroup>
     <Reference Include="MelonLoader">
-      <HintPath>..\MelonLoader\net6\MelonLoader.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\net6\MelonLoader.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="0Harmony">
-      <HintPath>..\MelonLoader\net6\0Harmony.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\net6\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppInterop.Runtime">
-      <HintPath>..\MelonLoader\net6\Il2CppInterop.Runtime.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\net6\Il2CppInterop.Runtime.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\Assembly-CSharp.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppMirror">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\Il2CppMirror.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\Il2CppMirror.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppMirror.Components">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\Il2CppMirror.Components.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\Il2CppMirror.Components.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2Cppmscorlib">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\Il2Cppmscorlib.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\Il2Cppmscorlib.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Il2CppUniTask">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\Il2CppUniTask.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\Il2CppUniTask.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\UnityEngine.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.AudioModule">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\UnityEngine.AudioModule.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.AudioModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\UnityEngine.InputLegacyModule.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.InputLegacyModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="Unity.InputSystem">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\Unity.InputSystem.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\Unity.InputSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>..\MelonLoader\Il2CppAssemblies\UnityEngine.UI.dll</HintPath>
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.UI.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
