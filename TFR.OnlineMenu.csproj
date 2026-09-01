@@ -7,7 +7,7 @@
     <AssemblyName>TFR.OnlineMenu</AssemblyName>
     <RootNamespace>TFROnlineMenu</RootNamespace>
     <DebugType>portable</DebugType>
-    <GameRoot Condition="'$(GameRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\TFR_OL\modded test'))</GameRoot>
+    <GameRoot Condition="'$(GameRoot)' == ''">$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../'))</GameRoot>
     <OutputPath>$(GameRoot)\Mods\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
@@ -84,5 +84,25 @@
       <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.UI.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="LinkSplash.jpg" LogicalName="TFROnlineMenu.LinkSplash.jpg" />
   </ItemGroup>
 </Project>

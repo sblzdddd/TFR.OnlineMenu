@@ -1,4 +1,5 @@
 using Il2Cpp;
+using Il2CppTMPro;
 using MelonLoader;
 using UnityEngine;
 using UnityEngine.Events;
@@ -123,25 +124,25 @@ public sealed partial class OnlineMenuMod : MelonMod
     private void RestoreOnlineButton()
     {
         var onlineObject = GameObject.Find("OnlineButton");
-        if (!onlineObject)
-        {
-            return;
-        }
-
+        onlineObject.GetComponent<Image>().color = Color.white;
+        onlineObject.transform.Find("Text").GetComponent<TextMeshProUGUI>().color = Color.white;
         var button = onlineObject.GetComponent<Button>();
-        if (!button)
-        {
-            return;
-        }
-
         button.enabled = true;
         button.interactable = true;
 
-        var selector = onlineObject.GetComponent<UIFRSelectable>();
-        if (selector)
-        {
-            selector.enabled = true;
-        }
+        var solo = GameObject.Find("SoloButton").GetComponent<Button>();
+        var customNav = solo.navigation;
+        customNav.selectOnDown = button;
+        solo.navigation = customNav;
+        var extra = GameObject.Find("ExtrasButton").GetComponent<Button>();
+        customNav = extra.navigation;
+        customNav.selectOnUp = button;
+        extra.navigation = customNav;
+        customNav = button.navigation;
+        customNav.mode = Navigation.Mode.Explicit;
+        customNav.selectOnUp = solo;
+        customNav.selectOnDown = extra;
+        button.navigation = customNav;
 
         _onlineButtonAction = (UnityAction)TogglePanel;
         button.onClick.RemoveAllListeners();
