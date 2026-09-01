@@ -15,7 +15,7 @@ except ImportError as e:
     sys.exit(1)
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_DB = ROOT.parent / "GameAssembly.dll.i64"
+DEFAULT_DB = ROOT.parent / "TFR_OL" / "GameAssembly.dll.i64"
 
 # Game (Assembly-CSharp) symbols already present in the IDB. Engine/runtime prefixes
 # are skipped when scanning so we do not dump Unity/mscorlib by accident.
