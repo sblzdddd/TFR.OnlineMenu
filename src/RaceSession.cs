@@ -7,35 +7,13 @@ public sealed partial class OnlineMenuMod
 {
     private GameMode? _networkGameMode;
 
-    private void StartRace()
+    internal void StartRace()
     {
-        if (!Il2CppMirror.NetworkServer.active)
-        {
-            _message = "Start Race is available only on the server.";
-            return;
-        }
-
         var server = FRNetworkServer.instance;
         var gameState = FRNetGameState.instance;
-        if (!server || !gameState)
-        {
-            _message = "Server or game state is not ready.";
-            return;
-        }
-
         var playerCount = server.GetPlayers().Count;
-        if (playerCount == 0)
-        {
-            _message = "Waiting for the host player.";
-            return;
-        }
-
-        var map = _map.Trim();
-        if (map.Length == 0 || !int.TryParse(_laps, out var laps) || laps is < 1 or > 99)
-        {
-            _message = "Choose a map and set laps from 1 to 99.";
-            return;
-        }
+        var map = Map.Trim();
+        int.TryParse(Laps, out var laps);
 
         if (!EnsureNetworkGameMode(map))
         {
@@ -45,11 +23,7 @@ public sealed partial class OnlineMenuMod
         gameState.map = map;
         gameState._settings._laps = laps;
         gameState.StartGame(gameState._settings);
-
-        _showPanel = false;
-        GUI.FocusControl(null);
-        GUIUtility.keyboardControl = 0;
-        _message = $"Starting {map} with {playerCount} player(s), {laps} lap(s)...";
+        Message = $"Starting {map} with {playerCount} player(s), {laps} lap(s)...";
     }
 
     private bool EnsureNetworkGameMode(string map)
@@ -57,7 +31,7 @@ public sealed partial class OnlineMenuMod
         var gameModeManager = GameModeManager.instance;
         if (!gameModeManager)
         {
-            _message = "GameModeManager is not available.";
+            Message = "GameModeManager is not available.";
             return false;
         }
 
@@ -70,7 +44,7 @@ public sealed partial class OnlineMenuMod
         var prefab = prefabObject ? prefabObject.GetComponent<GameMode>() : null;
         if (!prefab)
         {
-            _message = "The QuickRace prefab could not be loaded.";
+            Message = "The QuickRace prefab could not be loaded.";
             return false;
         }
 
@@ -87,7 +61,7 @@ public sealed partial class OnlineMenuMod
 
         if (circuit is null)
         {
-            _message = $"Unknown map '{map}'.";
+            Message = $"Unknown map '{map}'.";
             return false;
         }
 

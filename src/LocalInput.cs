@@ -13,7 +13,7 @@ public sealed partial class OnlineMenuMod
         var players = GameManager.players;
         if (players is null || players.Length == 0)
         {
-            _message = "GameManager has no local player slot.";
+            Message = "GameManager has no local player slot.";
             return false;
         }
 
@@ -25,7 +25,7 @@ public sealed partial class OnlineMenuMod
         var manager = RacingInputManager.instance;
         if (!manager || !manager.manager)
         {
-            _message = "RacingInputManager is not available.";
+            Message = "RacingInputManager is not available.";
             return false;
         }
 
@@ -37,11 +37,7 @@ public sealed partial class OnlineMenuMod
         for (var index = 0; index < inputs.Count; index++)
         {
             var input = inputs[index];
-            if (!input)
-            {
-                continue;
-            }
-
+            if (!input) continue;
             staleInputs.Add(input);
             if (device is null && input.devices.Count > 0)
             {
@@ -54,7 +50,7 @@ public sealed partial class OnlineMenuMod
         device ??= Gamepad.current;
         if (device is null)
         {
-            _message = "No keyboard or gamepad is available.";
+            Message = "No keyboard or gamepad is available.";
             return false;
         }
 
@@ -86,7 +82,7 @@ public sealed partial class OnlineMenuMod
         joinedInput = joinedInput ? joinedInput : FindJoinedPlayerInput();
         if (!joinedInput)
         {
-            _message = "PlayerInput was not created.";
+            Message = "PlayerInput was not created.";
             return false;
         }
 
@@ -175,6 +171,6 @@ public sealed partial class OnlineMenuMod
             controller.Init(player, racer);
         }
 
-        _message = "Local driving input is ready.";
+        Message = "Local driving input is ready.";
     }
 }

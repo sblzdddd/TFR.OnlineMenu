@@ -17,7 +17,7 @@ public sealed partial class OnlineMenuMod
 
         if (Il2CppMirror.NetworkClient.active && !EnsureNetworkGameMode(sceneName))
         {
-            LoggerInstance.Error(_message);
+            LoggerInstance.Error(Message);
         }
 
         _readySignalAttempts = 0;
@@ -37,7 +37,7 @@ public sealed partial class OnlineMenuMod
         var multiplayerManager = MultiplayerManager.instance;
         if (!multiplayerManager)
         {
-            _message = "MultiplayerManager is not available.";
+            Message = "MultiplayerManager is not available.";
             return false;
         }
 
@@ -46,18 +46,18 @@ public sealed partial class OnlineMenuMod
         var multiplayerRoot = FindMultiplayerRoot();
         if (!multiplayerRoot)
         {
-            _message = "The MANAGERS/Multiplayer root was not found.";
+            Message = "The MANAGERS/Multiplayer root was not found.";
             return false;
         }
 
         multiplayerRoot!.SetActive(true);
         if (!FRNetworkManager.instancia)
         {
-            _message = "FRNetworkManager did not initialize.";
+            Message = "FRNetworkManager did not initialize.";
             return false;
         }
 
-        _message = "Original multiplayer system initialized.";
+        Message = "Original multiplayer system initialized.";
         return true;
     }
 
@@ -126,18 +126,8 @@ public sealed partial class OnlineMenuMod
             return null;
         }
 
-        var nickname = _nickname.Trim();
-        if (string.IsNullOrWhiteSpace(nickname) || nickname.Length >= 64)
-        {
-            _message = "Nickname must contain 1-63 characters.";
-            return null;
-        }
-
-        var client = FRNetworkClient.instance;
-        if (client)
-        {
-            client.SetNickname(nickname);
-        }
+        var nickname = Nickname.Trim();
+        FRNetworkClient.instance.SetNickname(nickname);
 
         var manager = FRNetworkManager.instancia;
         return EnsureNetworkPrefabs(manager) && EnsureLocalGamePlayer()
@@ -152,7 +142,7 @@ public sealed partial class OnlineMenuMod
         var spawnPrefabs = manager.spawnPrefabs;
         if (!server || !gameState || spawnPrefabs is null)
         {
-            _message = "The game's network prefab registry is unavailable.";
+            Message = "The game's network prefab registry is unavailable.";
             return false;
         }
 
@@ -160,7 +150,7 @@ public sealed partial class OnlineMenuMod
         var gameSyncPrefab = gameState._gameSyncPrefab ? gameState._gameSyncPrefab.gameObject : null;
         if (!playerPrefab || !gameSyncPrefab)
         {
-            _message = "A required multiplayer prefab is missing.";
+            Message = "A required multiplayer prefab is missing.";
             return false;
         }
 
@@ -177,7 +167,7 @@ public sealed partial class OnlineMenuMod
         return true;
     }
 
-    private void StartHost()
+    internal void StartHost()
     {
         var manager = PrepareNetworkStart();
         if (!manager)
@@ -185,36 +175,42 @@ public sealed partial class OnlineMenuMod
             return;
         }
 
-        manager!.StartHost();
-        _message = "Host started on UDP 7777. Add players, then press Start Race.";
+        ApplyListenPort(manager, Port);
+        manager.StartHost();
+        Message = $"Host started on UDP {Port}.";
     }
 
-    private void StartClient()
+    internal void StartClient()
     {
-        var address = _address.Trim();
-        if (string.IsNullOrWhiteSpace(address))
-        {
-            _message = "Host address cannot be empty.";
-            return;
-        }
-
         var manager = PrepareNetworkStart();
         if (!manager)
         {
             return;
         }
 
-        manager!.networkAddress = address;
+        manager.networkAddress = Address;
+        ApplyListenPort(manager, Port);
         manager.StartClient();
-        _message = $"Connecting to {address}:7777 as {_nickname.Trim()}...";
+        Message = $"Connecting to {Address}:{Port} as {Nickname.Trim()}...";
     }
 
-    private void StopNetwork()
+    internal static void ApplyListenPort(FRNetworkManager manager, ushort port)
+    {
+        var kcp = manager.GetComponent<Il2Cppkcp2k.KcpTransport>();
+        if (!kcp)
+        {
+            kcp = manager.transport.TryCast<Il2Cppkcp2k.KcpTransport>();
+        }
+
+        kcp.Port = port;
+    }
+
+    internal void StopNetwork()
     {
         var manager = FRNetworkManager.instancia;
         if (!manager)
         {
-            _message = "FRNetworkManager is not available.";
+            Message = "FRNetworkManager is not available.";
             return;
         }
 
@@ -235,7 +231,7 @@ public sealed partial class OnlineMenuMod
         }
 
         CleanupNetworkGameMode();
-        _message = "Network session stopped.";
+        Message = "Network session stopped.";
     }
 
     private static string GetNetworkStatus()

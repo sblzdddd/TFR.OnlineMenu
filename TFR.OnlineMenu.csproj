@@ -36,6 +36,10 @@
       <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\Il2CppMirror.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Il2Cppkcp2k">
+      <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\Il2Cppkcp2k.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="Il2CppMirror.Components">
       <HintPath>$(GameRoot)\MelonLoader\Il2CppAssemblies\Il2CppMirror.Components.dll</HintPath>
       <Private>false</Private>
