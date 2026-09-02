@@ -1,5 +1,6 @@
 using HarmonyLib;
 using Il2Cpp;
+using MelonLoader;
 using TFROnlineMenu.Ui;
 
 namespace TFROnlineMenu.Patches;
@@ -17,6 +18,12 @@ internal static class MenuEventsGrandPrixPatch
         if (!OnlineRaceMenu.Active)
         {
             return true;
+        }
+
+        if (OnlineRaceMenu.HasSession)
+        {
+            MelonLogger.Msg("[Online] Grand Prix is not implemented.");
+            return false;
         }
 
         OnlineRaceMenu.OnHost();
@@ -39,6 +46,12 @@ internal static class MenuEventsQuickRacePatch
             return true;
         }
 
+        if (OnlineRaceMenu.HasSession)
+        {
+            OnlineSelection.BeginFromHost();
+            return false;
+        }
+
         OnlineRaceMenu.OnJoin();
         return false;
     }
@@ -57,6 +70,12 @@ internal static class MenuEventsGoCustomRacePatch
         if (!OnlineRaceMenu.Active)
         {
             return true;
+        }
+
+        if (OnlineRaceMenu.HasSession)
+        {
+            MelonLogger.Msg("[Online] Custom Race is not implemented.");
+            return false;
         }
 
         OnlineRaceMenu.OnProfile();

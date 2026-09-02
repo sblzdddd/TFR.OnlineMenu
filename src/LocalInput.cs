@@ -96,21 +96,30 @@ public sealed partial class OnlineMenuMod
 
     internal void OnRacingPlayerJoined(RacingInputManager manager, PlayerInput input)
     {
-        if (_bindingLocalInput && input.playerIndex == 0 && !IsLocalPlayerInputBound(input))
+        var slot = OnlineSelection.IsActive ? OnlineSelection.LocalSlot : 0;
+        if (_bindingLocalInput && input.playerIndex == slot && !IsLocalPlayerInputBound(input, slot))
         {
-            BindLocalPlayerInput(manager, input);
+            BindLocalPlayerInput(manager, input, slot);
         }
     }
 
-    private static bool IsLocalPlayerInputBound(PlayerInput input)
+    private static bool IsLocalPlayerInputBound(PlayerInput input, int slot = 0)
     {
-        var localInput = GameManager.players[0]?.input;
+        var players = GameManager.players;
+        if (players is null || slot < 0 || slot >= players.Length)
+        {
+            return false;
+        }
+
+        var localInput = players[slot]?.input;
         return localInput && localInput == input;
     }
 
-    private void BindLocalPlayerInput(RacingInputManager manager, PlayerInput input)
+    private void BindLocalPlayerInput(RacingInputManager manager, PlayerInput input, int slot = 0)
     {
-        var localPlayer = GameManager.players[0] ?? GameManager.AddHuman(0);
+        var localPlayer = (GameManager.players is not null && slot < GameManager.players.Length
+            ? GameManager.players[slot]
+            : null) ?? GameManager.AddHuman(slot);
         var controls = ProfilesManager.instance.GetDefaultControls();
 
         if (input.actions)
@@ -129,9 +138,9 @@ public sealed partial class OnlineMenuMod
         humanInput.enabled = true;
         input.transform.SetParent(manager.transform, false);
 
-        manager._humanInputIndex[0] = 0;
-        manager._humanCount = Math.Max(manager._humanCount, 1);
-        LoggerInstance.Msg($"Bound local PlayerInput: {input.currentControlScheme}.");
+        manager._humanInputIndex[slot] = slot;
+        manager._humanCount = Math.Max(manager._humanCount, slot + 1);
+        LoggerInstance.Msg($"Bound local PlayerInput: {input.currentControlScheme} (slot {slot}).");
     }
 
     private static PlayerInput? FindJoinedPlayerInput()

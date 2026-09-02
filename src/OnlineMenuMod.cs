@@ -35,11 +35,14 @@ public sealed partial class OnlineMenuMod : MelonMod
         {
             RestoreOnlineButton();
         }
+
+        OnlineSelection.HandleSceneInitialized(sceneName);
     }
 
     public override void OnUpdate()
     {
         UpdateRaceReady();
+        OnlineSelection.Tick();
         OnlineRaceMenu.Tick();
         JoinPanel.Tick();
         ProfilePanel.Tick();

@@ -15,7 +15,7 @@ public sealed partial class OnlineMenuMod
             return;
         }
 
-        if (Il2CppMirror.NetworkClient.active && !EnsureNetworkGameMode(sceneName))
+        if (Il2CppMirror.NetworkClient.active && !EnsureNetworkGameMode(sceneName, OnlineSelection.ConnectedCount))
         {
             LoggerInstance.Error(Message);
         }
@@ -87,7 +87,8 @@ public sealed partial class OnlineMenuMod
                !sceneName.Equals("splash", StringComparison.OrdinalIgnoreCase) &&
                !sceneName.Equals("loading", StringComparison.OrdinalIgnoreCase) &&
                !sceneName.Equals("render", StringComparison.OrdinalIgnoreCase) &&
-               !sceneName.Equals("menu2", StringComparison.OrdinalIgnoreCase);
+               !sceneName.Equals("menu2", StringComparison.OrdinalIgnoreCase) &&
+               !sceneName.Equals("selection", StringComparison.OrdinalIgnoreCase);
     }
 
     private void SendRaceReadyWhenAvailable()
