@@ -21,6 +21,13 @@ internal static class OnlineRaceMenu
     {
         Active = true;
         HostStarted = false;
+        if (HasSession && !Il2CppMirror.NetworkServer.active)
+        {
+            ApplyOriginalLabels();
+            OnlineSelection.RequestFollow();
+            return;
+        }
+
         ApplyOnlineLabels();
     }
 

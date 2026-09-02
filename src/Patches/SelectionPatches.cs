@@ -1,8 +1,96 @@
 using HarmonyLib;
 using Il2Cpp;
+using Il2CppMirror;
 using MelonLoader;
 
 namespace TFROnlineMenu.Patches;
+
+[HarmonyPatch(typeof(MainMenuManager), nameof(MainMenuManager.OnSceneLoaded))]
+internal static class MainMenuOnSceneLoadedPatch
+{
+    static bool Prefix(MainMenuManager __instance)
+    {
+        if (__instance._startModule is null)
+        {
+            OnlineSelection.InstallSelectionSequence(__instance);
+        }
+
+        if (__instance._startModule is not null)
+        {
+            return true;
+        }
+
+        MelonLogger.Msg("[Online] Skipping selection LoadSelection until a module is ready.");
+        return false;
+    }
+
+    static void Postfix()
+    {
+        if (OnlineSelection.IsOnlineSession)
+        {
+            OnlineSelection.HandleSelectionUiReady();
+        }
+    }
+}
+
+[HarmonyPatch(typeof(CharacterSelectionBehaviour), "CheckForPlayers")]
+internal static class CharacterSelectionCheckForPlayersPatch
+{
+    static bool Prefix()
+    {
+        return !OnlineSelection.ShouldStayInSession;
+    }
+}
+
+[HarmonyPatch(typeof(CharacterSelectionBehaviour), nameof(CharacterSelectionBehaviour.RefreshMatchingAll))]
+internal static class CharacterSelectionRefreshMatchingAllPatch
+{
+    static bool Prefix()
+    {
+        return !OnlineSelection.ShouldStayInSession;
+    }
+}
+
+[HarmonyPatch(typeof(RacingInputManager), nameof(RacingInputManager.OnPlayerLeft))]
+internal static class RacingInputManagerOnPlayerLeftPatch
+{
+    static bool Prefix()
+    {
+        return !OnlineSelection.ShouldStayInSession;
+    }
+}
+
+[HarmonyPatch(typeof(NetworkManager), nameof(NetworkManager.ClientChangeScene))]
+internal static class MirrorClientChangeScenePatch
+{
+    static bool Prefix(string newSceneName)
+    {
+        if (string.IsNullOrEmpty(newSceneName) ||
+            !newSceneName.Equals(OnlineSelection.SelectionScene, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        MelonLogger.Msg("[Online] Ignoring Mirror selection scene load; following via LevelManager.");
+        OnlineSelection.OnSelectionInvite();
+        return false;
+    }
+}
+
+[HarmonyPatch(typeof(LevelManager), nameof(LevelManager.LoadMainMenu))]
+internal static class LevelManagerLoadMainMenuPatch
+{
+    static bool Prefix()
+    {
+        if (!OnlineSelection.ShouldStayInSession)
+        {
+            return true;
+        }
+
+        MelonLogger.Msg("[Online] Ignoring LoadMainMenu while the online selection session is active.");
+        return false;
+    }
+}
 
 [HarmonyPatch(typeof(CharacterSelectionBehaviour), nameof(CharacterSelectionBehaviour.EnableJoining))]
 internal static class CharacterSelectionEnableJoiningPatch
@@ -34,7 +122,8 @@ internal static class CharacterSelectionUpdatePatch
         }
 
         var boxes = __instance._boxes;
-        if (boxes is null || boxes.Length == 0 || !boxes[0] || !boxes[0].ready)
+        var slot = OnlineSelection.LocalSlot;
+        if (boxes is null || slot < 0 || slot >= boxes.Length || !boxes[slot] || !boxes[slot].ready)
         {
             return false;
         }
@@ -83,11 +172,27 @@ internal static class SelectionPrevModulePatch
             return true;
         }
 
-        if (LevelManager.instance)
+        OnlineSelection.LeaveSession("Left the online session.");
+        return false;
+    }
+}
+
+[HarmonyPatch(typeof(SelectionMenuBehaviour), nameof(SelectionMenuBehaviour.NextModule))]
+internal static class SelectionNextModulePatch
+{
+    static bool Prefix(SelectionMenuBehaviour __instance)
+    {
+        if (!OnlineSelection.IsActive)
         {
-            LevelManager.instance.LoadMainMenu();
+            return true;
         }
 
+        if (__instance._currentModule is not null && __instance._currentModule.next is not null)
+        {
+            return true;
+        }
+
+        OnlineSelection.FinishFromMenu(__instance);
         return false;
     }
 }
@@ -102,26 +207,7 @@ internal static class SelectionEndSelectionPatch
             return true;
         }
 
-        if (__instance._currentModule is not null)
-        {
-            __instance._currentModule.End();
-        }
-
-        if (!Il2CppMirror.NetworkServer.active)
-        {
-            return false;
-        }
-
-        var props = new GameModeManager.SGameModeProperties
-        {
-            _cup = __instance._cup,
-            _maps = __instance._maps,
-            _itemType = 0,
-            _laps = __instance._laps,
-            _maxPlayers = OnlineSelection.ConnectedCount,
-            _humans = GameManager.players
-        };
-        OnlineMenuMod.Instance.StartRaceFromSelection(props);
+        OnlineSelection.FinishFromMenu(__instance);
         return false;
     }
 }
@@ -140,5 +226,14 @@ internal static class CreateAIPlayerPatch
         __result = GameManager.CreateNullAIPlayer();
         __result.nulled = true;
         return false;
+    }
+}
+
+[HarmonyPatch(typeof(FRNetGameState), "OnNetGameStart")]
+internal static class NetGameStartFollowPatch
+{
+    static void Prefix()
+    {
+        OnlineSelection.NotifyRaceStarting();
     }
 }

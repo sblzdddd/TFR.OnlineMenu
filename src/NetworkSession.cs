@@ -22,6 +22,10 @@ public sealed partial class OnlineMenuMod
 
         _readySignalAttempts = 0;
         _readySignalAt = Time.unscaledTime + 0.5f;
+        if (Il2CppMirror.NetworkClient.active)
+        {
+            Il2CppMirror.NetworkClient.Ready();
+        }
     }
 
     private void UpdateRaceReady()
@@ -192,6 +196,7 @@ public sealed partial class OnlineMenuMod
         manager.networkAddress = Address;
         ApplyListenPort(manager, Port);
         manager.StartClient();
+        OnlineSelection.NotifyClientConnected();
         Message = $"Connecting to {Address}:{Port} as {Nickname.Trim()}...";
     }
 

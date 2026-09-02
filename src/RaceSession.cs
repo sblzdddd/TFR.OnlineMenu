@@ -14,7 +14,7 @@ public sealed partial class OnlineMenuMod
         var netPlayers = OnlineSelection.GetNetworkPlayers();
         if (netPlayers.Count < 2)
         {
-            Message = "At least two players are required to start an online race.";
+            Message = $"At least two players are required to start an online race (found {netPlayers.Count}).";
             LoggerInstance.Warning(Message);
             return;
         }
@@ -46,11 +46,13 @@ public sealed partial class OnlineMenuMod
             var mp = new GameMPPlayer();
             mp.InitMP(netPlayer);
             var info = netPlayer.Network_info._racerInfo;
-            if (info._character >= 0)
+            TFROnlineMenu.Patches.RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
+                out var character, out var skin, out var vehicle, out _);
+            if (character >= 0)
             {
-                mp.character = info._character;
-                mp.skin = info._skin;
-                mp.vehicle = info._vehicle;
+                mp.character = character;
+                mp.skin = skin;
+                mp.vehicle = vehicle;
             }
 
             roster[index] = mp;
@@ -60,12 +62,12 @@ public sealed partial class OnlineMenuMod
         settings._players = roster;
         settings._level = map;
         settings._laps = laps;
-        settings._disableAutoStart = false;
+        settings._disableAutoStart = true;
         gameState._settings = settings;
         gameState.map = map;
-        gameState.StartGame(settings);
-        OnlineSelection.Stop();
+        OnlineSelection.BeginRace(map);
         OnlineRaceMenu.Suspend();
+        gameState.StartGame(settings);
         Message = $"Starting {map} with {netPlayers.Count} player(s), {laps} lap(s)...";
     }
 

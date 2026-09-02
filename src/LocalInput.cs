@@ -20,7 +20,24 @@ public sealed partial class OnlineMenuMod
         return players[0]?.input || EnsureLocalPlayerInput();
     }
 
-    private bool EnsureLocalPlayerInput()
+    internal void EnsureSelectionInput(int slot)
+    {
+        if (slot < 0)
+        {
+            return;
+        }
+
+        var players = GameManager.players;
+        var human = players is not null && slot < players.Length ? players[slot] : null;
+        if (human?.input && human.input.playerIndex == slot)
+        {
+            return;
+        }
+
+        EnsureLocalPlayerInput(slot);
+    }
+
+    private bool EnsureLocalPlayerInput(int slot = 0)
     {
         var manager = RacingInputManager.instance;
         if (!manager || !manager.manager)
@@ -66,7 +83,7 @@ public sealed partial class OnlineMenuMod
         try
         {
             joinedInput = manager.AddPlayer(
-                0,
+                slot,
                 string.IsNullOrWhiteSpace(controlScheme) ? null! : controlScheme,
                 device);
         }
@@ -79,16 +96,16 @@ public sealed partial class OnlineMenuMod
             _bindingLocalInput = false;
         }
 
-        joinedInput = joinedInput ? joinedInput : FindJoinedPlayerInput();
+        joinedInput = joinedInput ? joinedInput : FindJoinedPlayerInput(slot);
         if (!joinedInput)
         {
             Message = "PlayerInput was not created.";
             return false;
         }
 
-        if (!IsLocalPlayerInputBound(joinedInput!))
+        if (!IsLocalPlayerInputBound(joinedInput!, slot))
         {
-            BindLocalPlayerInput(manager, joinedInput!);
+            BindLocalPlayerInput(manager, joinedInput!, slot);
         }
 
         return true;
@@ -143,12 +160,12 @@ public sealed partial class OnlineMenuMod
         LoggerInstance.Msg($"Bound local PlayerInput: {input.currentControlScheme} (slot {slot}).");
     }
 
-    private static PlayerInput? FindJoinedPlayerInput()
+    private static PlayerInput? FindJoinedPlayerInput(int slot)
     {
         var inputs = PlayerInput.all;
         for (var index = 0; index < inputs.Count; index++)
         {
-            if (inputs[index] && inputs[index].playerIndex == 0)
+            if (inputs[index] && inputs[index].playerIndex == slot)
             {
                 return inputs[index];
             }
@@ -159,7 +176,7 @@ public sealed partial class OnlineMenuMod
 
     internal void OnLocalPlayerPossessed(HumanGamePlayer player, PlayerRacer racer, int humanIndex)
     {
-        if (humanIndex != 0 || !Il2CppMirror.NetworkClient.active)
+        if (humanIndex != OnlineSelection.LocalSlot || !Il2CppMirror.NetworkClient.active)
         {
             return;
         }

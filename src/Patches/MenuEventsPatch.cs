@@ -22,7 +22,15 @@ internal static class MenuEventsGrandPrixPatch
 
         if (OnlineRaceMenu.HasSession)
         {
-            MelonLogger.Msg("[Online] Grand Prix is not implemented.");
+            if (Il2CppMirror.NetworkServer.active)
+            {
+                MelonLogger.Msg("[Online] Grand Prix is not implemented.");
+            }
+            else
+            {
+                OnlineSelection.RequestFollow();
+            }
+
             return false;
         }
 
@@ -48,7 +56,15 @@ internal static class MenuEventsQuickRacePatch
 
         if (OnlineRaceMenu.HasSession)
         {
-            OnlineSelection.BeginFromHost();
+            if (Il2CppMirror.NetworkServer.active)
+            {
+                OnlineSelection.BeginFromHost();
+            }
+            else
+            {
+                OnlineSelection.RequestFollow();
+            }
+
             return false;
         }
 
@@ -74,7 +90,15 @@ internal static class MenuEventsGoCustomRacePatch
 
         if (OnlineRaceMenu.HasSession)
         {
-            MelonLogger.Msg("[Online] Custom Race is not implemented.");
+            if (Il2CppMirror.NetworkServer.active)
+            {
+                MelonLogger.Msg("[Online] Custom Race is not implemented.");
+            }
+            else
+            {
+                OnlineSelection.RequestFollow();
+            }
+
             return false;
         }
 
