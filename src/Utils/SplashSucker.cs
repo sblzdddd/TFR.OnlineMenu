@@ -3,10 +3,10 @@ using Il2Cpp;
 using Il2CppTMPro;
 using MelonLoader;
 using UnityEngine;
-using static UnityEngine.Object;
 using UnityEngine.UI;
+using static UnityEngine.Object;
 
-namespace TFROnlineMenu;
+namespace TFROnlineMenu.Utils;
 
 internal static class SplashSucker
 {
@@ -21,7 +21,7 @@ internal static class SplashSucker
     static float _fadeOutStart;
 
     [HarmonyPatch(typeof(FRMain), nameof(FRMain.Start))]
-    internal static class MainsceneLoadingNoticePatch
+    internal static class MainScreenSucker
     {
         static void Postfix()
         {
@@ -48,7 +48,7 @@ internal static class SplashSucker
     }
 
     [HarmonyPatch(typeof(SplashScript), nameof(SplashScript.Start))]
-    internal static class SplashSecondScreenPatch
+    internal static class SplashScreenSucker
     {
         static void Postfix(SplashScript __instance)
         {
@@ -143,14 +143,20 @@ internal static class SplashSucker
             group.alpha = Mathf.Clamp01(1f - t);
             if (t < 1f) return;
 
-            FuckSplash();
+            MelonEvents.OnUpdate.Unsubscribe(_syncAlpha);
             splash.CancelInvoke();
             splash.EndSplash();
         }
     }
 
-    public static void FuckSplash()
+
+    [HarmonyPatch(typeof(SplashScript), nameof(SplashScript.EndSplash))]
+    internal static class SplashSuckerFucker
     {
-        MelonEvents.OnUpdate.Unsubscribe(_syncAlpha);
+
+        static void Prefix(SplashScript __instance)
+        {
+            MelonEvents.OnUpdate.Unsubscribe(_syncAlpha);
+        }
     }
 }

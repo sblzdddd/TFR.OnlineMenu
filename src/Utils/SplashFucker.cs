@@ -2,24 +2,13 @@
 using Il2Cpp;
 using MelonLoader;
 using UnityEngine;
-using UnityEngine.Rendering;
 
-namespace TFROnlineMenu;
+namespace TFROnlineMenu.Utils;
 
 [HarmonyPatch(typeof(SplashScript), nameof(SplashScript.Start))]
 internal static class SplashFucker
 {
     static LemonAction? _fuck;
-
-    [HarmonyPatch(typeof(SplashScreen), nameof(SplashScreen.Draw))]
-    internal static class UnitySplashDrawPatch
-    {
-        static bool Prefix()
-        {
-            SplashScreen.Stop(SplashScreen.StopBehavior.StopImmediate);
-            return false;
-        }
-    }
 
     static void Postfix(SplashScript __instance)
     {
@@ -39,7 +28,6 @@ internal static class SplashFucker
         if (!splash) UnFuck();
         if (!Input.anyKeyDown) return;
         splash.CancelInvoke();
-        SplashSucker.FuckSplash();
         splash.EndSplash();
     }
 

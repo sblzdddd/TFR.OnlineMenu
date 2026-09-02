@@ -5,7 +5,7 @@ using MelonLoader;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
-namespace TFROnlineMenu;
+namespace TFROnlineMenu.Utils;
 
 internal static class ModUiUtils
 {
