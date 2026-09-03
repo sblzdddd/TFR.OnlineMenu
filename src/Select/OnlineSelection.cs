@@ -691,7 +691,6 @@ internal static class OnlineSelection
         LoggerInstance.Msg($"Slot UI: {slotUI?.name}, character: {character}, slot: {slot}");
         if (slotUI is not null)
         {
-            slotUI.SetActive(true);
             behaviour.SelectCharacter(slotUI.GetComponent<CharacterSlotUI>(), slot);
         }
         if (box)
@@ -818,9 +817,9 @@ internal static class OnlineSelection
         }
 
         RefreshJoinedBoxes(behaviour);
-        // HideRemoteSelectors(behaviour, localSlot);
         _slotsReady = true;
         _lastCount = Math.Min(netPlayers.Count, MaxSlots);
+        ApplySelectors(behaviour, _lastCount);
         LastRemotePicks.Clear();
         ApplyAllRemotePicks(netPlayers);
     }
@@ -869,7 +868,7 @@ internal static class OnlineSelection
         }
     }
 
-    private static void HideRemoteSelectors(CharacterSelectionBehaviour behaviour, int localSlot)
+    private static void ApplySelectors(CharacterSelectionBehaviour behaviour, int playersCnt)
     {
         if (behaviour._selectors is null)
         {
@@ -884,7 +883,7 @@ internal static class OnlineSelection
                 continue;
             }
 
-            selector.gameObject.SetActive(index == localSlot);
+            selector.gameObject.SetActive(playersCnt > index);
         }
     }
 

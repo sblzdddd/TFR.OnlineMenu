@@ -16,7 +16,7 @@ System.NullReferenceException: Object reference not set to an instance of an obj
 
 no further effects observed
 
-# only self player selection box is seen in character selection grid
+(Fixed) only self player selection box is seen in character selection grid
 
 # client side device type label showing DEBUGME on selection scene load (shouldnt be shown)
 
