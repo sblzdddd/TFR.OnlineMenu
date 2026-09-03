@@ -1,15 +1,17 @@
 using Il2CppTMPro;
+using TFROnlineMenu.Select;
+using TFROnlineMenu.Utils;
 using UnityEngine;
 
-namespace TFROnlineMenu.Ui;
+namespace TFROnlineMenu.Home.UI;
 
 internal static class OnlineRaceMenu
 {
-    const string HostLabel = "Host";
-    const string JoinLabel = "Join";
-    const string ProfileLabel = "Profile";
+    private const string HostLabel = "Host";
+    private const string JoinLabel = "Join";
+    private const string ProfileLabel = "Profile";
 
-    static readonly string[] OriginalLabels = ["Grand Prix", "Quick Race", "Custom"];
+    private static readonly string[] OriginalLabels = ["Grand Prix", "Quick Race", "Custom"];
 
     internal static bool Active { get; private set; }
     internal static bool HostStarted { get; private set; }
@@ -29,6 +31,7 @@ internal static class OnlineRaceMenu
         }
 
         ApplyOnlineLabels();
+        if (LaunchArgs.Auto == LaunchAutoMode.Host) OnHost();
     }
 
     internal static void Exit()
@@ -72,10 +75,7 @@ internal static class OnlineRaceMenu
 
     internal static void Tick()
     {
-        if (!Active)
-        {
-            return;
-        }
+        if (!Active) return;
 
         if (!GameObject.Find("RaceMenu"))
         {
@@ -104,6 +104,11 @@ internal static class OnlineRaceMenu
         }
 
         OnlineMenuMod.Instance.StartHost();
+        if (!HasSession)
+        {
+            return;
+        }
+
         HostStarted = true;
         ApplyOriginalLabels();
     }
@@ -123,14 +128,14 @@ internal static class OnlineRaceMenu
         ProfilePanel.Open();
     }
 
-    static void ApplyOnlineLabels()
+    private static void ApplyOnlineLabels()
     {
         SetButtonText(HostButton(), HostLabel);
         SetButtonText(JoinButton(), JoinLabel);
         SetButtonText(ProfileButton(), ProfileLabel);
     }
 
-    static void ApplyOriginalLabels()
+    private static void ApplyOriginalLabels()
     {
         SetButtonText(HostButton(), OriginalLabels[0]);
         SetButtonText(JoinButton(), OriginalLabels[1]);
@@ -141,13 +146,13 @@ internal static class OnlineRaceMenu
     internal static GameObject JoinButton() => Option("QuickRaceButton");
     internal static GameObject ProfileButton() => Option("CustomButton");
 
-    static GameObject Option(string name)
+    private static GameObject Option(string name)
     {
         var race = GameObject.Find("RaceMenu") ?? SceneObjects.Find("RaceMenu");
         return race.transform.Find("OptionsRoot/OptionsPivot").Find(name).gameObject;
     }
 
-    static void SetButtonText(GameObject button, string text)
+    private static void SetButtonText(GameObject button, string text)
     {
         button.GetComponentInChildren<TextMeshProUGUI>(true).text = text;
     }

@@ -3,21 +3,21 @@ using TFROnlineMenu.Utils;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace TFROnlineMenu.Ui;
+namespace TFROnlineMenu.Home.UI;
 
 internal sealed class IpAddressDial
 {
-    static readonly int[] DigitSlots = [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 19, 20];
-    const string DefaultDisplay = "127.000.000.001:07777";
-    const float FirstRepeat = 0.28f;
-    const float HoldRepeat = 0.08f;
-    const float StickGate = 0.55f;
+    private static readonly int[] DigitSlots = [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 19, 20];
+    private const string DefaultDisplay = "127.000.000.001:07777";
+    private const float FirstRepeat = 0.28f;
+    private const float HoldRepeat = 0.08f;
+    private const float StickGate = 0.55f;
 
-    readonly TextMeshProUGUI _text;
-    string _display = DefaultDisplay;
-    int _caret;
-    float _repeatAt;
-    int _heldAxis;
+    private readonly TextMeshProUGUI _text;
+    private string _display = DefaultDisplay;
+    private int _caret;
+    private float _repeatAt;
+    private int _heldAxis;
 
     internal IpAddressDial(Transform parent)
     {
@@ -25,8 +25,6 @@ internal sealed class IpAddressDial
         go.transform.SetParent(parent, false);
         _text = go.AddComponent<TextMeshProUGUI>();
         var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.sizeDelta = new Vector2(820f, 80f);
         rect.anchoredPosition = new Vector2(0f, 20f);
         _text.font = ModUiUtils.LoadTmpFont("Alphakind");
@@ -67,14 +65,12 @@ internal sealed class IpAddressDial
             return;
         }
 
-        if (Time.unscaledTime >= _repeatAt)
-        {
-            Apply(x, y);
-            _repeatAt = Time.unscaledTime + HoldRepeat;
-        }
+        if (!(Time.unscaledTime >= _repeatAt)) return;
+        Apply(x, y);
+        _repeatAt = Time.unscaledTime + HoldRepeat;
     }
 
-    void Apply(int x, int y)
+    private void Apply(int x, int y)
     {
         if (x != 0)
         {
@@ -91,13 +87,13 @@ internal sealed class IpAddressDial
         Refresh();
     }
 
-    void Refresh()
+    private void Refresh()
     {
         var i = DigitSlots[_caret];
         _text.text = $"{_display[..i]}<color=#FFB600>{_display[i]}</color>{_display[(i + 1)..]}";
     }
 
-    static int ReadAxis(bool horizontal)
+    private static int ReadAxis(bool horizontal)
     {
         var keyboard = Keyboard.current;
         if (keyboard != null)

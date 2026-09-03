@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace TFROnlineMenu.Ui;
+namespace TFROnlineMenu.Utils;
 
 internal static class SceneObjects
 {

@@ -1,21 +1,23 @@
 using Il2Cpp;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
-using TFROnlineMenu.Ui;
+using MelonLoader;
+using TFROnlineMenu.Home.UI;
+using TFROnlineMenu.Select;
 using UnityEngine;
 
-namespace TFROnlineMenu;
+namespace TFROnlineMenu.Race;
 
-public sealed partial class OnlineMenuMod
+internal static class RaceSession
 {
-    private GameMode? _networkGameMode;
+    private static GameMode? _networkGameMode;
+    private static MelonLogger.Instance LoggerInstance => TFROnlineMenu.OnlineMenuMod.Instance.LoggerInstance;
 
-    internal void StartRaceFromSelection(GameModeManager.SGameModeProperties props)
+    internal static void StartRaceFromSelection(GameModeManager.SGameModeProperties props)
     {
         var netPlayers = OnlineSelection.GetNetworkPlayers();
         if (netPlayers.Count < 2)
         {
-            Message = $"At least two players are required to start an online race (found {netPlayers.Count}).";
-            LoggerInstance.Warning(Message);
+            LoggerInstance.Error($"At least two players are required to start an online race (found {netPlayers.Count}).");
             return;
         }
 
@@ -25,7 +27,7 @@ public sealed partial class OnlineMenuMod
             circuit = props._maps[0];
         }
 
-        var map = circuit is not null ? circuit._scene : Map.Trim();
+        var map = circuit is not null ? circuit._scene : OnlineMenuMod.Instance.Map.Trim();
         var laps = props._laps > 0 ? props._laps : 3;
         if (!EnsureNetworkGameMode(map, netPlayers.Count, circuit))
         {
@@ -35,7 +37,7 @@ public sealed partial class OnlineMenuMod
         var gameState = FRNetGameState.instance;
         if (!gameState)
         {
-            Message = "FRNetGameState is not available.";
+            LoggerInstance.Error("FRNetGameState is not available.");
             return;
         }
 
@@ -46,7 +48,7 @@ public sealed partial class OnlineMenuMod
             var mp = new GameMPPlayer();
             mp.InitMP(netPlayer);
             var info = netPlayer.Network_info._racerInfo;
-            TFROnlineMenu.Patches.RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
+            Patches.RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
                 out var character, out var skin, out var vehicle, out _);
             if (character >= 0)
             {
@@ -68,15 +70,15 @@ public sealed partial class OnlineMenuMod
         OnlineSelection.BeginRace(map);
         OnlineRaceMenu.Suspend();
         gameState.StartGame(settings);
-        Message = $"Starting {map} with {netPlayers.Count} player(s), {laps} lap(s)...";
+        LoggerInstance.Msg($"Starting {map} with {netPlayers.Count} player(s), {laps} lap(s)...");
     }
 
-    private bool EnsureNetworkGameMode(string map, int maxPlayers = 0, CircuitData? circuit = null)
+    internal static bool EnsureNetworkGameMode(string map, int maxPlayers = 0, CircuitData? circuit = null)
     {
         var gameModeManager = GameModeManager.instance;
         if (!gameModeManager)
         {
-            Message = "GameModeManager is not available.";
+            LoggerInstance.Error("GameModeManager is not available.");
             return false;
         }
 
@@ -89,7 +91,7 @@ public sealed partial class OnlineMenuMod
         var prefab = prefabObject ? prefabObject.GetComponent<GameMode>() : null;
         if (!prefab)
         {
-            Message = "The QuickRace prefab could not be loaded.";
+            LoggerInstance.Error("The QuickRace prefab could not be loaded.");
             return false;
         }
 
@@ -108,13 +110,15 @@ public sealed partial class OnlineMenuMod
 
         if (circuit is null)
         {
-            Message = $"Unknown map '{map}'.";
+            LoggerInstance.Error($"Unknown map '{map}'.");
             return false;
         }
 
         var instance = UnityEngine.Object.Instantiate(prefab!, Vector3.zero, Quaternion.identity)!;
-        var playlist = new Il2CppReferenceArray<CircuitData>(1);
-        playlist[0] = circuit;
+        var playlist = new Il2CppReferenceArray<CircuitData>(1)
+        {
+            [0] = circuit
+        };
         instance._playlist = playlist;
         instance._playlistIndex = 0;
         if (maxPlayers > 0)
@@ -128,7 +132,7 @@ public sealed partial class OnlineMenuMod
         return true;
     }
 
-    private void CleanupNetworkGameMode()
+    internal static void CleanupNetworkGameMode()
     {
         OnlineSelection.Stop();
         if (!_networkGameMode)

@@ -1,5 +1,8 @@
 using Il2Cpp;
 using UnityEngine;
+using Il2Cppkcp2k;
+using TFROnlineMenu.Race;
+using TFROnlineMenu.Select;
 
 namespace TFROnlineMenu;
 
@@ -15,9 +18,9 @@ public sealed partial class OnlineMenuMod
             return;
         }
 
-        if (Il2CppMirror.NetworkClient.active && !EnsureNetworkGameMode(sceneName, OnlineSelection.ConnectedCount))
+        if (Il2CppMirror.NetworkClient.active && !RaceSession.EnsureNetworkGameMode(sceneName, OnlineSelection.ConnectedCount))
         {
-            LoggerInstance.Error(Message);
+            LoggerInstance.Error("Failed to ensure network game mode.");
         }
 
         _readySignalAttempts = 0;
@@ -41,47 +44,28 @@ public sealed partial class OnlineMenuMod
         var multiplayerManager = MultiplayerManager.instance;
         if (!multiplayerManager)
         {
-            Message = "MultiplayerManager is not available.";
+            LoggerInstance.Error("MultiplayerManager is not available.");
             return false;
         }
 
         multiplayerManager._system ??= new MultiplayerSystem();
 
-        var multiplayerRoot = FindMultiplayerRoot();
+        var multiplayerRoot = GameObject.Find("MANAGERS").transform.Find("Multiplayer");
         if (!multiplayerRoot)
         {
-            Message = "The MANAGERS/Multiplayer root was not found.";
+            LoggerInstance.Error("The MANAGERS/Multiplayer root was not found.");
             return false;
         }
+        multiplayerRoot!.gameObject.SetActive(true);
 
-        multiplayerRoot!.SetActive(true);
         if (!FRNetworkManager.instancia)
         {
-            Message = "FRNetworkManager did not initialize.";
+            LoggerInstance.Error("FRNetworkManager did not initialize.");
             return false;
         }
 
-        Message = "Original multiplayer system initialized.";
+        LoggerInstance.Msg("Original multiplayer system initialized.");
         return true;
-    }
-
-    private static GameObject? FindMultiplayerRoot()
-    {
-        foreach (var candidate in Resources.FindObjectsOfTypeAll<GameObject>())
-        {
-            if (!candidate || candidate.name != "Multiplayer")
-            {
-                continue;
-            }
-
-            var parent = candidate.transform.parent;
-            if (candidate.scene.IsValid() && candidate.scene.isLoaded && parent && parent.name == "MANAGERS")
-            {
-                return candidate;
-            }
-        }
-
-        return null;
     }
 
     private static bool IsPlayableScene(string sceneName)
@@ -147,7 +131,7 @@ public sealed partial class OnlineMenuMod
         var spawnPrefabs = manager.spawnPrefabs;
         if (!server || !gameState || spawnPrefabs is null)
         {
-            Message = "The game's network prefab registry is unavailable.";
+            LoggerInstance.Error("The game's network prefab registry is unavailable.");
             return false;
         }
 
@@ -155,7 +139,7 @@ public sealed partial class OnlineMenuMod
         var gameSyncPrefab = gameState._gameSyncPrefab ? gameState._gameSyncPrefab.gameObject : null;
         if (!playerPrefab || !gameSyncPrefab)
         {
-            Message = "A required multiplayer prefab is missing.";
+            LoggerInstance.Error("A required multiplayer prefab is missing.");
             return false;
         }
 
@@ -175,40 +159,30 @@ public sealed partial class OnlineMenuMod
     internal void StartHost()
     {
         var manager = PrepareNetworkStart();
-        if (!manager)
-        {
-            return;
-        }
+        if (manager is null) return;
 
         ApplyListenPort(manager, Port);
         manager.StartHost();
-        Message = $"Host started on UDP {Port}.";
+        LoggerInstance.Msg($"Host started on UDP {Port}.");
     }
 
     internal void StartClient()
     {
         var manager = PrepareNetworkStart();
-        if (!manager)
-        {
-            return;
-        }
+        if (manager is null) return;
 
         manager.networkAddress = Address;
         ApplyListenPort(manager, Port);
         manager.StartClient();
         OnlineSelection.NotifyClientConnected();
-        Message = $"Connecting to {Address}:{Port} as {Nickname.Trim()}...";
+        LoggerInstance.Msg($"Connecting to {Address}:{Port} as {Nickname.Trim()}...");
     }
 
-    internal static void ApplyListenPort(FRNetworkManager manager, ushort port)
+    private static void ApplyListenPort(FRNetworkManager manager, ushort port)
     {
-        var kcp = manager.GetComponent<Il2Cppkcp2k.KcpTransport>();
-        if (!kcp)
-        {
-            kcp = manager.transport.TryCast<Il2Cppkcp2k.KcpTransport>();
-        }
-
-        kcp.Port = port;
+        var kcp = manager.GetComponent<KcpTransport>();
+        if (!kcp) kcp = manager.transport.TryCast<KcpTransport>();
+        kcp!.Port = port;
     }
 
     internal void StopNetwork()
@@ -216,7 +190,7 @@ public sealed partial class OnlineMenuMod
         var manager = FRNetworkManager.instancia;
         if (!manager)
         {
-            Message = "FRNetworkManager is not available.";
+            LoggerInstance.Error("FRNetworkManager is not available.");
             return;
         }
 
@@ -236,21 +210,7 @@ public sealed partial class OnlineMenuMod
             multiplayerManager._system = null;
         }
 
-        CleanupNetworkGameMode();
-        Message = "Network session stopped.";
-    }
-
-    private static string GetNetworkStatus()
-    {
-        if (Il2CppMirror.NetworkServer.active)
-        {
-            var server = FRNetworkServer.instance;
-            var playerCount = server ? server.GetPlayers().Count : 0;
-            return $"Network mode: Host | Players: {playerCount}";
-        }
-
-        return Il2CppMirror.NetworkClient.active
-            ? "Network mode: Client"
-            : "Network mode: Offline";
+        RaceSession.CleanupNetworkGameMode();
+        LoggerInstance.Msg("Network session stopped.");
     }
 }

@@ -1,8 +1,8 @@
-namespace TFROnlineMenu.Ui;
+namespace TFROnlineMenu.Home.UI;
 
 internal static class JoinPanel
 {
-    static IpAddressDial? _dial;
+    private static IpAddressDial? _dial;
 
     internal static void Open()
     {
@@ -25,7 +25,7 @@ internal static class JoinPanel
         _dial = null;
     }
 
-    static void Confirm()
+    private static void Confirm()
     {
         var mod = OnlineMenuMod.Instance;
         mod.Address = _dial!.Address;

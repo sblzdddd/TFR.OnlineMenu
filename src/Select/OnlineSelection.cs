@@ -1,36 +1,47 @@
 using Il2Cpp;
 using Il2CppMirror;
 using MelonLoader;
+using TFROnlineMenu.Race;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static UnityEngine.Object;
 
-namespace TFROnlineMenu;
+namespace TFROnlineMenu.Select;
 
 internal static class OnlineSelection
 {
     internal const string SelectionScene = "selection";
-    const int MaxSlots = 4;
-    const float HostPollInterval = 0.25f;
-    const float ReturnToMenuRetry = 12f;
-    const float DisconnectGrace = 2f;
+    private const int MaxSlots = 4;
+    private const float HostPollInterval = 0.25f;
+    private const float ReturnToMenuRetry = 12f;
+    private const float DisconnectGrace = 2f;
 
-    static bool _entering;
-    static bool _slotsReady;
-    static bool _startingRace;
-    static bool _leaving;
-    static bool _hadSession;
-    static bool _followSelection;
-    static bool _returningToMenu;
-    static bool _localConfirmed;
-    static int _lastCount;
-    static float _nextHostPoll;
-    static float _returnToMenuAt;
-    static float _offlineAt = -1;
-    static readonly Dictionary<uint, (int Character, int Skin, int Vehicle)> LastRemotePicks = new();
-    static readonly HashSet<uint> ConfirmedPeers = new();
+    private static bool _entering;
+    private static bool _slotsReady;
+    private static bool _startingRace;
+    private static bool _leaving;
+    private static bool _hadSession;
+    private static bool _followSelection;
+    private static bool _returningToMenu;
+    private static bool _localConfirmed;
+    private static int _lastCount;
+    private static float _nextHostPoll;
+    private static float _returnToMenuAt;
+    private static float _offlineAt = -1;
+    private static readonly Dictionary<uint, (int Character, int Skin, int Vehicle)> LastRemotePicks = new();
+    private static readonly HashSet<uint> ConfirmedPeers = new();
+    private static MelonLogger.Instance LoggerInstance => OnlineMenuMod.Instance.LoggerInstance;
 
     internal static bool IsActive { get; private set; }
 
+    private static readonly string[] SlotUIMap =
+    {
+        "CharacterSlot (6)", "CharacterSlot (15)", "CharacterSlot (32)", "CharacterSlot (10)", "CharacterSlot (2)",
+        "CharacterSlot (31)", "CharacterSlot (1)", "CharacterSlot (27)", "CharacterSlot (30)", "CharacterSlot (17)",
+        "CharacterSlot (16)", "CharacterSlot", "CharacterSlot (12)", "CharacterSlot (26)", "CharacterSlot (28)",
+        "CharacterSlot (3)", "CharacterSlot (5)", "CharacterSlot (18)", "CharacterSlot (7)", "CharacterSlot (11)",
+        "CharacterSlot (29)", "CharacterSlot (8)", "CharacterSlot (13)", "CharacterSlot (9)",
+    };
     internal static int LocalSlot
     {
         get
@@ -58,7 +69,7 @@ internal static class OnlineSelection
         _followSelection = true;
         PublishHostLobbyState(true);
         EnterSelectionLocally();
-        OnlineMenuMod.Instance.Message = "Starting online Quick Race selection...";
+        LoggerInstance.Msg("Starting online Quick Race selection...");
     }
 
     internal static void NotifyClientConnected()
@@ -100,15 +111,16 @@ internal static class OnlineSelection
         var netPlayers = GetNetworkPlayers();
         if (netPlayers.Count < 2)
         {
-            OnlineMenuMod.Instance.Message = $"At least two players are required (found {netPlayers.Count}).";
+            LoggerInstance.Error($"At least two players are required (found {netPlayers.Count}).");
             return;
         }
 
         if (!AllPlayersConfirmed(out var confirmed, out var total))
         {
-            OnlineMenuMod.Instance.Message =
-                $"Wait for every player to confirm character and kart ({confirmed}/{total}).";
-            MelonLogger.Msg($"[Online] Blocked map start: {confirmed}/{total} player(s) confirmed.");
+            LoggerInstance.Error(
+                $"Wait for every player to confirm character and kart ({confirmed}/{total})."
+            );
+            LoggerInstance.Error($"[Online] Blocked map start: {confirmed}/{total} player(s) confirmed.");
             return;
         }
 
@@ -127,8 +139,8 @@ internal static class OnlineSelection
             _maxPlayers = netPlayers.Count,
             _humans = GameManager.players
         };
-        MelonLogger.Msg($"[Online] Host confirmed map. Players={netPlayers.Count}, maps={(props._maps is null ? 0 : props._maps.Length)}.");
-        OnlineMenuMod.Instance.StartRaceFromSelection(props);
+        LoggerInstance.Msg($"Host confirmed map. Players={netPlayers.Count}, maps={(props._maps is null ? 0 : props._maps.Length)}.");
+        RaceSession.StartRaceFromSelection(props);
         _startingRace = false;
     }
 
@@ -246,7 +258,7 @@ internal static class OnlineSelection
         }
 
         TryFollowHost(force: false);
-        TFROnlineMenu.Patches.RacerInfoSync.PushLocal();
+        Patches.RacerInfoSync.PushLocal();
         RaceProgress.Tick();
         if (!IsActive || !IsOnlineSession)
         {
@@ -271,7 +283,7 @@ internal static class OnlineSelection
             }
             catch (Exception exception)
             {
-                MelonLogger.Warning($"[Online] ApplySlots: {exception.Message}");
+                LoggerInstance.Warning($"[Online] ApplySlots: {exception.Message}");
                 _slotsReady = true;
                 _lastCount = count;
             }
@@ -282,7 +294,7 @@ internal static class OnlineSelection
         }
     }
 
-    static void WatchDisconnect()
+    private static void WatchDisconnect()
     {
         if (IsOnlineSession)
         {
@@ -309,7 +321,7 @@ internal static class OnlineSelection
         HandleDisconnect();
     }
 
-    static void WatchReturnToMenu()
+    private static void WatchReturnToMenu()
     {
         if (!_returningToMenu)
         {
@@ -336,20 +348,20 @@ internal static class OnlineSelection
         _returningToMenu = false;
         if (LevelManager.instance)
         {
-            MelonLogger.Msg("[Online] Disconnect left a non-menu scene; loading the main menu once.");
+            LoggerInstance.Msg("[Online] Disconnect left a non-menu scene; loading the main menu once.");
             LevelManager.instance.LoadMainMenu();
         }
     }
 
-    static bool IsMainMenu(string scene) =>
+    private static bool IsMainMenu(string scene) =>
         scene.Equals("menu2", StringComparison.OrdinalIgnoreCase) ||
         scene.Equals("mainscene", StringComparison.OrdinalIgnoreCase);
 
-    static bool IsLoadingScene(string scene) =>
+    private static bool IsLoadingScene(string scene) =>
         scene.Equals("loading", StringComparison.OrdinalIgnoreCase) ||
         LevelManager.instance && LevelManager.instance.isLoading;
 
-    static bool IsLobbyScene(string scene)
+    private static bool IsLobbyScene(string scene)
     {
         return IsMainMenu(scene) ||
                scene.Equals("splash", StringComparison.OrdinalIgnoreCase) ||
@@ -358,7 +370,7 @@ internal static class OnlineSelection
                scene.Equals("render", StringComparison.OrdinalIgnoreCase);
     }
 
-    static void TryFollowHost(bool force)
+    private static void TryFollowHost(bool force)
     {
         if (NetworkServer.active || !NetworkClient.active || _leaving || GameManager.inRace)
         {
@@ -386,7 +398,7 @@ internal static class OnlineSelection
         {
             if (force)
             {
-                OnlineMenuMod.Instance.Message = "Connected. Waiting for the host to start Quick Race.";
+                LoggerInstance.Msg("Connected. Waiting for the host to start Quick Race.");
             }
 
             return;
@@ -401,7 +413,7 @@ internal static class OnlineSelection
         EnterSelectionLocally();
         if (!wasFollowing && _followSelection)
         {
-            MelonLogger.Msg("[Online] Host is in the selection lobby; following.");
+            LoggerInstance.Msg("[Online] Host is in the selection lobby; following.");
         }
     }
 
@@ -410,7 +422,7 @@ internal static class OnlineSelection
     /// <see cref="FRNetworkPlayer.Network_info"/>. That is a Mirror SyncVar, so every client receives it
     /// through the normal spawn/delta path and can simply poll it in <see cref="HostSignalsLobby"/>.
     /// </summary>
-    static void PublishHostLobbyState(bool inLobby)
+    private static void PublishHostLobbyState(bool inLobby)
     {
         if (!NetworkServer.active)
         {
@@ -425,9 +437,9 @@ internal static class OnlineSelection
 
         var info = local.Network_info;
         var racer = info._racerInfo;
-        TFROnlineMenu.Patches.RacerInfoSync.DecodePick(racer._character, racer._skin, racer._vehicle,
+        Patches.RacerInfoSync.DecodePick(racer._character, racer._skin, racer._vehicle,
             out var character, out _, out _, out var ready);
-        var encoded = TFROnlineMenu.Patches.RacerInfoSync.EncodeCharacter(character, ready, inLobby);
+        var encoded = Patches.RacerInfoSync.EncodeCharacter(character, ready, inLobby);
         if (racer._character == encoded)
         {
             return;
@@ -438,12 +450,12 @@ internal static class OnlineSelection
         local.Network_info = info;
     }
 
-    static bool HostSignalsLobby()
+    private static bool HostSignalsLobby()
     {
         // Mirror assigns netIds in spawn order, so the host owns the first player identity.
         var players = GetNetworkPlayers();
         return players.Count > 0 &&
-               TFROnlineMenu.Patches.RacerInfoSync.DecodeLobby(
+               Patches.RacerInfoSync.DecodeLobby(
                    players[0].Network_info._racerInfo._character);
     }
 
@@ -484,7 +496,7 @@ internal static class OnlineSelection
         foreach (var player in players)
         {
             var info = player.Network_info._racerInfo;
-            TFROnlineMenu.Patches.RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
+            Patches.RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
                 out _, out _, out _, out var ready);
             if (ready || ConfirmedPeers.Contains(player.netId))
             {
@@ -502,7 +514,7 @@ internal static class OnlineSelection
     /// </summary>
     internal static bool RefreshLocalConfirmed()
     {
-        var behaviour = UnityEngine.Object.FindObjectOfType<CharacterSelectionBehaviour>();
+        var behaviour = FindObjectOfType<CharacterSelectionBehaviour>();
         var boxes = behaviour ? behaviour._boxes : null;
         var slot = LocalSlot;
         if (boxes is not null && slot >= 0 && slot < boxes.Length && boxes[slot])
@@ -513,7 +525,7 @@ internal static class OnlineSelection
         return _localConfirmed;
     }
 
-    static void SyncLocalConfirmed()
+    private static void SyncLocalConfirmed()
     {
         var local = FRNetworkPlayer.localPlayer;
         if (local)
@@ -522,7 +534,7 @@ internal static class OnlineSelection
         }
     }
 
-    static void EnsureClientReady()
+    private static void EnsureClientReady()
     {
         try
         {
@@ -533,17 +545,17 @@ internal static class OnlineSelection
         }
         catch (Exception exception)
         {
-            MelonLogger.Warning($"[Online] NetworkClient.Ready: {exception.Message}");
+            LoggerInstance.Warning($"[Online] NetworkClient.Ready: {exception.Message}");
         }
     }
 
-    static SelectionMenuBehaviour? FindSelectionMenu()
+    private static SelectionMenuBehaviour? FindSelectionMenu()
     {
-        var menu = UnityEngine.Object.FindObjectOfType<SelectionMenuBehaviour>();
+        var menu = FindObjectOfType<SelectionMenuBehaviour>();
         return menu && menu._currentModule is not null ? menu : null;
     }
 
-    static void PrunePeers()
+    private static void PrunePeers()
     {
         var live = new HashSet<uint>();
         foreach (var player in GetNetworkPlayers())
@@ -558,7 +570,7 @@ internal static class OnlineSelection
 
     internal static void HandleDisconnect() => EndSession("Disconnected from host.", stopNetwork: false);
 
-    static void EndSession(string reason, bool stopNetwork)
+    private static void EndSession(string reason, bool stopNetwork)
     {
         if (_leaving)
         {
@@ -581,7 +593,7 @@ internal static class OnlineSelection
             LevelManager.instance.LoadMainMenu();
         }
 
-        OnlineMenuMod.Instance.Message = reason;
+        LoggerInstance.Msg(reason);
         _leaving = false;
     }
 
@@ -599,7 +611,7 @@ internal static class OnlineSelection
         LastRemotePicks.Clear();
         ConfirmedPeers.Clear();
         _offlineAt = -1;
-        TFROnlineMenu.Patches.RacerInfoSync.Reset();
+        Patches.RacerInfoSync.Reset();
         RaceProgress.Stop();
     }
 
@@ -611,7 +623,7 @@ internal static class OnlineSelection
         }
 
         var info = player!.Network_info._racerInfo;
-        TFROnlineMenu.Patches.RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
+        Patches.RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
             out var character, out var skin, out var vehicle, out var ready);
         // The local machine is authoritative for its own readiness; do not let the replicated copy,
         // which lags a round trip behind, overwrite the latch in RefreshLocalConfirmed.
@@ -652,14 +664,14 @@ internal static class OnlineSelection
         }
 
         var pick = (character, skin, vehicle);
-        var behaviour = UnityEngine.Object.FindObjectOfType<CharacterSelectionBehaviour>();
+        var behaviour = FindObjectOfType<CharacterSelectionBehaviour>();
         var boxes = behaviour ? behaviour._boxes : null;
         var box = boxes is not null && slot < boxes.Length ? boxes[slot] : null;
         if (LastRemotePicks.TryGetValue(player.netId, out var previous) && previous == pick)
         {
             if (box && box!.ready != ready)
             {
-                box!._ready = ready;
+                box._ready = ready;
             }
 
             return;
@@ -675,6 +687,13 @@ internal static class OnlineSelection
         }
 
         behaviour.RefreshMatching(slot, human, character, skin, vehicle);
+        var slotUI = GameObject.Find(SlotUIMap[character]);
+        LoggerInstance.Msg($"Slot UI: {slotUI?.name}, character: {character}, slot: {slot}");
+        if (slotUI is not null)
+        {
+            slotUI.SetActive(true);
+            behaviour.SelectCharacter(slotUI.GetComponent<CharacterSlotUI>(), slot);
+        }
         if (box)
         {
             box!._ready = ready;
@@ -703,7 +722,7 @@ internal static class OnlineSelection
 
         else
         {
-            var found = UnityEngine.Object.FindObjectsOfType<FRNetworkPlayer>(true);
+            var found = FindObjectsOfType<FRNetworkPlayer>(true);
             if (found is not null)
             {
                 foreach (var player in found)
@@ -722,7 +741,7 @@ internal static class OnlineSelection
 
     internal static int ConnectedCount => GetNetworkPlayers().Count;
 
-    static int SlotOf(FRNetworkPlayer player, List<FRNetworkPlayer>? players = null)
+    private static int SlotOf(FRNetworkPlayer player, List<FRNetworkPlayer>? players = null)
     {
         if (!player)
         {
@@ -744,9 +763,9 @@ internal static class OnlineSelection
         return -1;
     }
 
-    static void ApplySlots(List<FRNetworkPlayer>? netPlayers = null)
+    private static void ApplySlots(List<FRNetworkPlayer>? netPlayers = null)
     {
-        var behaviour = UnityEngine.Object.FindObjectOfType<CharacterSelectionBehaviour>();
+        var behaviour = FindObjectOfType<CharacterSelectionBehaviour>();
         if (!behaviour)
         {
             return;
@@ -771,7 +790,7 @@ internal static class OnlineSelection
                 if (!local || netPlayer != local)
                 {
                     var info = netPlayer.Network_info._racerInfo;
-                    TFROnlineMenu.Patches.RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
+                    Patches.RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
                         out var character, out var skin, out var vehicle, out _);
                     human.character = character < 0 ? 0 : character;
                     human.skin = Math.Max(skin, 0);
@@ -781,7 +800,7 @@ internal static class OnlineSelection
             else if (GameManager.players is not null && index < GameManager.players.Length &&
                      GameManager.players[index] is not null)
             {
-                GameManager.players[index]._joined = false;
+                GameManager.players[index]!._joined = false;
             }
         }
 
@@ -794,33 +813,33 @@ internal static class OnlineSelection
             }
             catch (Exception exception)
             {
-                MelonLogger.Warning($"[Online] CharacterSelectionBehaviour.Loaded: {exception.Message}");
+                LoggerInstance.Warning($"[Online] CharacterSelectionBehaviour.Loaded: {exception.Message}");
             }
         }
 
         RefreshJoinedBoxes(behaviour);
-        HideRemoteSelectors(behaviour, localSlot);
+        // HideRemoteSelectors(behaviour, localSlot);
         _slotsReady = true;
         _lastCount = Math.Min(netPlayers.Count, MaxSlots);
         LastRemotePicks.Clear();
         ApplyAllRemotePicks(netPlayers);
     }
 
-    static void SanitizeHumanPick(HumanGamePlayer? human)
+    private static void SanitizeHumanPick(HumanGamePlayer? human)
     {
         if (human is null)
         {
             return;
         }
 
-        TFROnlineMenu.Patches.RacerInfoSync.DecodePick(human.character, human.skin, human.vehicle,
+        Patches.RacerInfoSync.DecodePick(human.character, human.skin, human.vehicle,
             out var character, out var skin, out var vehicle, out _);
         human.character = character < 0 ? 0 : character;
         human.skin = Math.Max(skin, 0);
         human.vehicle = Math.Max(vehicle, 0);
     }
 
-    static void RefreshJoinedBoxes(CharacterSelectionBehaviour behaviour)
+    private static void RefreshJoinedBoxes(CharacterSelectionBehaviour behaviour)
     {
         var humans = GameManager.players;
         var boxes = behaviour._boxes;
@@ -850,7 +869,7 @@ internal static class OnlineSelection
         }
     }
 
-    static void HideRemoteSelectors(CharacterSelectionBehaviour behaviour, int localSlot)
+    private static void HideRemoteSelectors(CharacterSelectionBehaviour behaviour, int localSlot)
     {
         if (behaviour._selectors is null)
         {
@@ -869,7 +888,7 @@ internal static class OnlineSelection
         }
     }
 
-    static void ApplyAllRemotePicks(IEnumerable<FRNetworkPlayer>? players = null)
+    private static void ApplyAllRemotePicks(IEnumerable<FRNetworkPlayer>? players = null)
     {
         foreach (var player in players ?? GetNetworkPlayers())
         {

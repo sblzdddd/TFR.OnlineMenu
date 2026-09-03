@@ -1,30 +1,27 @@
 using HarmonyLib;
 using Il2Cpp;
 using MelonLoader;
-using TFROnlineMenu.Ui;
+using TFROnlineMenu.Home.UI;
+using TFROnlineMenu.Select;
 
-namespace TFROnlineMenu.Patches;
+namespace TFROnlineMenu.Home.Patches;
 
 [HarmonyPatch(typeof(MenuEvents), nameof(MenuEvents.GrandPrix))]
 internal static class MenuEventsGrandPrixPatch
 {
-    static bool Prefix()
-    {
-        if (CreditsPopup.IsOpen)
-        {
-            return false;
-        }
+    private static MelonLogger.Instance LoggerInstance => OnlineMenuMod.Instance.LoggerInstance;
 
-        if (!OnlineRaceMenu.Active)
-        {
-            return true;
-        }
+    private static bool Prefix()
+    {
+        if (CreditsPopup.IsOpen) return false;
+
+        if (!OnlineRaceMenu.Active) return true;
 
         if (OnlineRaceMenu.HasSession)
         {
             if (Il2CppMirror.NetworkServer.active)
             {
-                MelonLogger.Msg("[Online] Grand Prix is not implemented.");
+                LoggerInstance.Msg("Grand Prix is not implemented.");
             }
             else
             {
@@ -42,17 +39,11 @@ internal static class MenuEventsGrandPrixPatch
 [HarmonyPatch(typeof(MenuEvents), nameof(MenuEvents.QuickRace))]
 internal static class MenuEventsQuickRacePatch
 {
-    static bool Prefix()
+    private static bool Prefix()
     {
-        if (CreditsPopup.IsOpen)
-        {
-            return false;
-        }
+        if (CreditsPopup.IsOpen) return false;
 
-        if (!OnlineRaceMenu.Active)
-        {
-            return true;
-        }
+        if (!OnlineRaceMenu.Active) return true;
 
         if (OnlineRaceMenu.HasSession)
         {
@@ -76,23 +67,19 @@ internal static class MenuEventsQuickRacePatch
 [HarmonyPatch(typeof(MenuEvents), nameof(MenuEvents.GoCustomRace))]
 internal static class MenuEventsGoCustomRacePatch
 {
-    static bool Prefix()
-    {
-        if (CreditsPopup.IsOpen)
-        {
-            return false;
-        }
+    private static MelonLogger.Instance LoggerInstance => OnlineMenuMod.Instance.LoggerInstance;
 
-        if (!OnlineRaceMenu.Active)
-        {
-            return true;
-        }
+    private static bool Prefix()
+    {
+        if (CreditsPopup.IsOpen) return false;
+
+        if (!OnlineRaceMenu.Active) return true;
 
         if (OnlineRaceMenu.HasSession)
         {
             if (Il2CppMirror.NetworkServer.active)
             {
-                MelonLogger.Msg("[Online] Custom Race is not implemented.");
+                LoggerInstance.Msg("Custom Race is not implemented.");
             }
             else
             {

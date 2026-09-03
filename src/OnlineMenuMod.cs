@@ -1,8 +1,11 @@
 using Il2Cpp;
 using Il2CppTMPro;
 using MelonLoader;
-using TFROnlineMenu.Ui;
+using TFROnlineMenu.Home.UI;
+using TFROnlineMenu.Select;
+using TFROnlineMenu.Utils;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace TFROnlineMenu;
@@ -16,11 +19,12 @@ public sealed partial class OnlineMenuMod : MelonMod
     internal ushort Port = 7777;
     internal string Map = "forest";
     internal string Laps = "3";
-    internal string Message = "Click Host or Join to begin.";
 
     public override void OnInitializeMelon()
     {
         Instance = this;
+        LaunchArgs.EnsureParsed();
+        LaunchWindow.Initialize();
         LoggerInstance.Msg("TFR Online Menu initialized.");
     }
 
@@ -34,6 +38,15 @@ public sealed partial class OnlineMenuMod : MelonMod
         if (sceneName.Equals("menu2", StringComparison.OrdinalIgnoreCase))
         {
             RestoreOnlineButton();
+            if (LaunchArgs.Auto == LaunchAutoMode.Host)
+            {
+                EventSystem.current.SetSelectedGameObject(GameObject.Find("OnlineButton"));
+                GameObject.Find("MainRaceTransition").GetComponent<MainToRaceTransition>()?.BeginSequence();
+                LoggerInstance.Msg("TFR Online Menu initialized.");
+            } else if (LaunchArgs.Auto == LaunchAutoMode.Join)
+            {
+                StartClient();
+            }
         }
 
         OnlineSelection.HandleSceneInitialized(sceneName);

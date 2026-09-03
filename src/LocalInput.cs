@@ -1,6 +1,6 @@
 using HarmonyLib;
 using Il2Cpp;
-using UnityEngine;
+using TFROnlineMenu.Select;
 using UnityEngine.InputSystem;
 
 namespace TFROnlineMenu;
@@ -13,13 +13,11 @@ public sealed partial class OnlineMenuMod
     private bool EnsureLocalGamePlayer()
     {
         var players = GameManager.players;
-        if (players is null || players.Length == 0)
-        {
-            Message = "GameManager has no local player slot.";
-            return false;
-        }
+        if (players is not null && players.Length != 0)
+            return players[LocalInputIndex]?.input || EnsureLocalPlayerInput();
+        LoggerInstance.Error("GameManager has no local player slot.");
+        return false;
 
-        return players[LocalInputIndex]?.input || EnsureLocalPlayerInput();
     }
 
     internal void EnsureSelectionInput()
@@ -40,7 +38,7 @@ public sealed partial class OnlineMenuMod
         var manager = RacingInputManager.instance;
         if (!manager || !manager.manager)
         {
-            Message = "RacingInputManager is not available.";
+            LoggerInstance.Error("RacingInputManager is not available.");
             return false;
         }
 
@@ -65,7 +63,7 @@ public sealed partial class OnlineMenuMod
         device ??= Gamepad.current;
         if (device is null)
         {
-            Message = "No keyboard or gamepad is available.";
+            LoggerInstance.Error("No keyboard or gamepad is available.");
             return false;
         }
 
@@ -97,7 +95,7 @@ public sealed partial class OnlineMenuMod
         joinedInput = joinedInput ? joinedInput : FindJoinedPlayerInput();
         if (!joinedInput)
         {
-            Message = "PlayerInput was not created.";
+            LoggerInstance.Error("PlayerInput was not created.");
             return false;
         }
 
@@ -177,7 +175,7 @@ internal static class RacingInputManagerOnPlayerJoinedPatch
 {
     private static void Postfix(RacingInputManager __instance, PlayerInput __0)
     {
-        OnlineMenuMod.Instance?.OnRacingPlayerJoined(__instance, __0);
+        OnlineMenuMod.Instance.OnRacingPlayerJoined(__instance, __0);
     }
 }
 

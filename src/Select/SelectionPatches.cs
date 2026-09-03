@@ -3,12 +3,14 @@ using Il2Cpp;
 using Il2CppMirror;
 using MelonLoader;
 
-namespace TFROnlineMenu.Patches;
+namespace TFROnlineMenu.Select;
 
 [HarmonyPatch(typeof(MainMenuManager), nameof(MainMenuManager.OnSceneLoaded))]
 internal static class MainMenuOnSceneLoadedPatch
 {
-    static bool Prefix(MainMenuManager __instance)
+    private static MelonLogger.Instance LoggerInstance => OnlineMenuMod.Instance.LoggerInstance;
+
+    private static bool Prefix(MainMenuManager __instance)
     {
         if (__instance._startModule is null)
         {
@@ -20,11 +22,11 @@ internal static class MainMenuOnSceneLoadedPatch
             return true;
         }
 
-        MelonLogger.Msg("[Online] Skipping selection LoadSelection until a module is ready.");
+        LoggerInstance.Msg("Skipping selection LoadSelection until a module is ready.");
         return false;
     }
 
-    static void Postfix()
+    private static void Postfix()
     {
         if (OnlineSelection.IsOnlineSession)
         {
@@ -33,10 +35,10 @@ internal static class MainMenuOnSceneLoadedPatch
     }
 }
 
-[HarmonyPatch(typeof(CharacterSelectionBehaviour), "CheckForPlayers")]
+[HarmonyPatch(typeof(CharacterSelectionBehaviour), nameof(CharacterSelectionBehaviour.CheckForPlayers))]
 internal static class CharacterSelectionCheckForPlayersPatch
 {
-    static bool Prefix()
+    private static bool Prefix()
     {
         return !OnlineSelection.ShouldStayInSession;
     }
@@ -45,7 +47,7 @@ internal static class CharacterSelectionCheckForPlayersPatch
 [HarmonyPatch(typeof(CharacterSelectionBehaviour), nameof(CharacterSelectionBehaviour.RefreshMatchingAll))]
 internal static class CharacterSelectionRefreshMatchingAllPatch
 {
-    static bool Prefix()
+    private static bool Prefix()
     {
         return !OnlineSelection.ShouldStayInSession;
     }
@@ -54,7 +56,7 @@ internal static class CharacterSelectionRefreshMatchingAllPatch
 [HarmonyPatch(typeof(RacingInputManager), nameof(RacingInputManager.OnPlayerLeft))]
 internal static class RacingInputManagerOnPlayerLeftPatch
 {
-    static bool Prefix()
+    private static bool Prefix()
     {
         return !OnlineSelection.ShouldStayInSession;
     }
@@ -63,7 +65,9 @@ internal static class RacingInputManagerOnPlayerLeftPatch
 [HarmonyPatch(typeof(NetworkManager), nameof(NetworkManager.ClientChangeScene))]
 internal static class MirrorClientChangeScenePatch
 {
-    static bool Prefix(string newSceneName)
+    private static MelonLogger.Instance LoggerInstance => OnlineMenuMod.Instance.LoggerInstance;
+
+    private static bool Prefix(string newSceneName)
     {
         if (string.IsNullOrEmpty(newSceneName) ||
             !newSceneName.Equals(OnlineSelection.SelectionScene, StringComparison.OrdinalIgnoreCase))
@@ -71,7 +75,7 @@ internal static class MirrorClientChangeScenePatch
             return true;
         }
 
-        MelonLogger.Msg("[Online] Ignoring Mirror selection scene load; following via LevelManager.");
+        LoggerInstance.Msg("Ignoring Mirror selection scene load; following via LevelManager.");
         OnlineSelection.OnSelectionInvite();
         return false;
     }
@@ -80,14 +84,16 @@ internal static class MirrorClientChangeScenePatch
 [HarmonyPatch(typeof(LevelManager), nameof(LevelManager.LoadMainMenu))]
 internal static class LevelManagerLoadMainMenuPatch
 {
-    static bool Prefix()
+    private static MelonLogger.Instance LoggerInstance => OnlineMenuMod.Instance.LoggerInstance;
+
+    private static bool Prefix()
     {
         if (!OnlineSelection.ShouldStayInSession)
         {
             return true;
         }
 
-        MelonLogger.Msg("[Online] Ignoring LoadMainMenu while the online selection session is active.");
+        LoggerInstance.Msg("Ignoring LoadMainMenu while the online selection session is active.");
         return false;
     }
 }
@@ -95,7 +101,7 @@ internal static class LevelManagerLoadMainMenuPatch
 [HarmonyPatch(typeof(CharacterSelectionBehaviour), nameof(CharacterSelectionBehaviour.EnableJoining))]
 internal static class CharacterSelectionEnableJoiningPatch
 {
-    static bool Prefix()
+    private static bool Prefix()
     {
         return !OnlineSelection.IsActive;
     }
@@ -104,7 +110,7 @@ internal static class CharacterSelectionEnableJoiningPatch
 [HarmonyPatch(typeof(CharacterSelectionBehaviour), nameof(CharacterSelectionBehaviour.Update))]
 internal static class CharacterSelectionUpdatePatch
 {
-    static bool Prefix(CharacterSelectionBehaviour __instance)
+    private static bool Prefix(CharacterSelectionBehaviour __instance)
     {
         if (!OnlineSelection.IsActive)
         {
@@ -116,7 +122,7 @@ internal static class CharacterSelectionUpdatePatch
             return false;
         }
 
-        if (!Il2CppMirror.NetworkServer.active)
+        if (!NetworkServer.active)
         {
             return false;
         }
@@ -142,25 +148,25 @@ internal static class CharacterSelectionUpdatePatch
 [HarmonyPatch(typeof(CupSelectionBehaviour), nameof(CupSelectionBehaviour.Proceed))]
 internal static class CupSelectionProceedPatch
 {
-    static bool Prefix()
+    private static bool Prefix()
     {
-        return !OnlineSelection.IsActive || Il2CppMirror.NetworkServer.active;
+        return !OnlineSelection.IsActive || NetworkServer.active;
     }
 }
 
 [HarmonyPatch(typeof(CupSelectionBehaviour), nameof(CupSelectionBehaviour.FinishSelection))]
 internal static class CupSelectionFinishPatch
 {
-    static bool Prefix()
+    private static bool Prefix()
     {
-        return !OnlineSelection.IsActive || Il2CppMirror.NetworkServer.active;
+        return !OnlineSelection.IsActive || NetworkServer.active;
     }
 }
 
 [HarmonyPatch(typeof(SelectionMenuBehaviour), nameof(SelectionMenuBehaviour.PrevModule))]
 internal static class SelectionPrevModulePatch
 {
-    static bool Prefix(SelectionMenuBehaviour __instance)
+    private static bool Prefix(SelectionMenuBehaviour __instance)
     {
         if (!OnlineSelection.IsActive)
         {
@@ -180,7 +186,7 @@ internal static class SelectionPrevModulePatch
 [HarmonyPatch(typeof(SelectionMenuBehaviour), nameof(SelectionMenuBehaviour.NextModule))]
 internal static class SelectionNextModulePatch
 {
-    static bool Prefix(SelectionMenuBehaviour __instance)
+    private static bool Prefix(SelectionMenuBehaviour __instance)
     {
         if (!OnlineSelection.IsActive)
         {
@@ -200,7 +206,7 @@ internal static class SelectionNextModulePatch
 [HarmonyPatch(typeof(SelectionMenuBehaviour), "EndSelection")]
 internal static class SelectionEndSelectionPatch
 {
-    static bool Prefix(SelectionMenuBehaviour __instance)
+    private static bool Prefix(SelectionMenuBehaviour __instance)
     {
         if (!OnlineSelection.IsActive)
         {
@@ -215,14 +221,16 @@ internal static class SelectionEndSelectionPatch
 [HarmonyPatch(typeof(GameManager), nameof(GameManager.CreateAIPlayer))]
 internal static class CreateAIPlayerPatch
 {
-    static bool Prefix(ref AIGamePlayer __result)
+    private static MelonLogger.Instance LoggerInstance => OnlineMenuMod.Instance.LoggerInstance;
+
+    private static bool Prefix(ref AIGamePlayer __result)
     {
         if (!OnlineSelection.IsOnlineSession)
         {
             return true;
         }
 
-        MelonLogger.Msg("[Online] Skipping AI fill.");
+        LoggerInstance.Msg("Skipping AI fill.");
         __result = GameManager.CreateNullAIPlayer();
         __result.nulled = true;
         return false;
@@ -232,8 +240,26 @@ internal static class CreateAIPlayerPatch
 [HarmonyPatch(typeof(FRNetGameState), "OnNetGameStart")]
 internal static class NetGameStartFollowPatch
 {
-    static void Prefix()
+    private static void Prefix()
     {
         OnlineSelection.NotifyRaceStarting();
+    }
+}
+
+
+[HarmonyPatch(typeof(SelectCursorVFX), nameof(SelectCursorVFX.OnSelect))]
+internal static class VFXOnSelectPatch
+{
+    private static bool Prefix()
+    {
+        return false;
+    }
+}
+[HarmonyPatch(typeof(SelectCursorVFX), nameof(SelectCursorVFX.OnSubmit))]
+internal static class VFXOnSubmitPatch
+{
+    private static bool Prefix()
+    {
+        return false;
     }
 }

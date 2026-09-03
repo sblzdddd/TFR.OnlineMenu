@@ -1,22 +1,24 @@
 using HarmonyLib;
 using Il2Cpp;
 using Il2CppMirror;
+using MelonLoader;
+using TFROnlineMenu.Select;
 using UnityEngine;
 
 namespace TFROnlineMenu.Patches;
 
 internal static class RacerInfoSync
 {
-    const double PickRttBase = 1_000_000d;
-    const double PickReadyFlag = 500_000_000d;
-    const double PickFinishFlag = 2_000_000_000d;
-    const int PickStride = 1000;
+    private const double PickRttBase = 1_000_000d;
+    private const double PickReadyFlag = 500_000_000d;
+    private const double PickFinishFlag = 2_000_000_000d;
+    private const int PickStride = 1000;
     internal const int ReadyBias = 100;
     internal const int LobbyBias = 1000;
     internal const int FinishBias = 10000;
 
-    static (int Character, int Skin, int Vehicle, bool Ready)? _lastPushed;
-    static float _nextHeartbeat;
+    private static (int Character, int Skin, int Vehicle, bool Ready)? _lastPushed;
+    private static float _nextHeartbeat;
 
     internal static void Reset()
     {
@@ -182,7 +184,7 @@ internal static class RacerInfoSync
         return true;
     }
 
-    static double PackPick(int character, int skin, int vehicle, bool ready, bool finished = false)
+    private static double PackPick(int character, int skin, int vehicle, bool ready, bool finished = false)
     {
         return PickRttBase
                + (ready ? PickReadyFlag : 0d)
@@ -192,7 +194,7 @@ internal static class RacerInfoSync
                + SafePick(vehicle);
     }
 
-    static bool TryUnpackPick(double value, out int character, out int skin, out int vehicle, out bool ready,
+    private static bool TryUnpackPick(double value, out int character, out int skin, out int vehicle, out bool ready,
         out bool finished)
     {
         character = 0;
@@ -231,13 +233,14 @@ internal static class RacerInfoSync
         return true;
     }
 
-    static int SafePick(int value) => Math.Clamp(value, 0, PickStride - 1);
+    private static int SafePick(int value) => Math.Clamp(value, 0, PickStride - 1);
 }
 
 [HarmonyPatch(typeof(CharacterSelectionBehaviour), nameof(CharacterSelectionBehaviour.SelectCharacter))]
 internal static class SelectCharacterSyncPatch
 {
-    static void Postfix(int humanindex)
+    private static MelonLogger.Instance LoggerInstance => TFROnlineMenu.OnlineMenuMod.Instance.LoggerInstance;
+    private static void Postfix(int humanindex)
     {
         if (humanindex == OnlineSelection.LocalSlot)
         {
@@ -249,7 +252,7 @@ internal static class SelectCharacterSyncPatch
 [HarmonyPatch(typeof(CharacterSelectionBehaviour), nameof(CharacterSelectionBehaviour.SubmitCharacter))]
 internal static class SubmitCharacterSyncPatch
 {
-    static void Postfix(int humanindex)
+    private static void Postfix(int humanindex)
     {
         if (humanindex == OnlineSelection.LocalSlot)
         {
@@ -261,7 +264,7 @@ internal static class SubmitCharacterSyncPatch
 [HarmonyPatch(typeof(CharacterSelectionBehaviour), nameof(CharacterSelectionBehaviour.RefreshMatching))]
 internal static class RefreshMatchingSyncPatch
 {
-    static void Postfix(int humanindex)
+    private static void Postfix(int humanindex)
     {
         if (humanindex == OnlineSelection.LocalSlot)
         {
@@ -273,7 +276,7 @@ internal static class RefreshMatchingSyncPatch
 [HarmonyPatch(typeof(PlayerBoxUI), "ISelectable_Move")]
 internal static class PlayerBoxMoveSyncPatch
 {
-    static void Postfix(int humanindex)
+    private static void Postfix(int humanindex)
     {
         if (humanindex == OnlineSelection.LocalSlot)
         {
@@ -285,7 +288,7 @@ internal static class PlayerBoxMoveSyncPatch
 [HarmonyPatch(typeof(PlayerBoxUI), "ISelectable_Submit")]
 internal static class PlayerBoxSubmitSyncPatch
 {
-    static void Postfix(int humanindex)
+    private static void Postfix(int humanindex)
     {
         if (humanindex == OnlineSelection.LocalSlot)
         {
@@ -297,7 +300,7 @@ internal static class PlayerBoxSubmitSyncPatch
 [HarmonyPatch(typeof(PlayerBoxUI), "ISelectable_Cancel")]
 internal static class PlayerBoxCancelSyncPatch
 {
-    static void Postfix(int humanindex)
+    private static void Postfix(int humanindex)
     {
         if (humanindex == OnlineSelection.LocalSlot)
         {
@@ -309,7 +312,7 @@ internal static class PlayerBoxCancelSyncPatch
 [HarmonyPatch(typeof(FRNetworkPlayer), nameof(FRNetworkPlayer.ServerInit))]
 internal static class ServerInitPickPatch
 {
-    static void Postfix(FRNetworkPlayer __instance)
+    private static void Postfix(FRNetworkPlayer __instance)
     {
         OnlineSelection.ApplyRemotePick(__instance);
     }
@@ -318,7 +321,7 @@ internal static class ServerInitPickPatch
 [HarmonyPatch(typeof(FRNetworkPlayer), "UserCode_CmdPing")]
 internal static class CmdPingPickPatch
 {
-    static void Prefix(FRNetworkPlayer __instance, double rtt)
+    private static void Prefix(FRNetworkPlayer __instance, double rtt)
     {
         RacerInfoSync.TryApplyPackedRtt(__instance, rtt, out _);
     }
@@ -327,7 +330,7 @@ internal static class CmdPingPickPatch
 [HarmonyPatch(typeof(FRNetworkPlayer), nameof(FRNetworkPlayer.Network_rtt), MethodType.Setter)]
 internal static class NetworkRttPickPatch
 {
-    static bool Prefix(FRNetworkPlayer __instance, double value)
+    private static bool Prefix(FRNetworkPlayer __instance, double value)
     {
         return !RacerInfoSync.TryApplyPackedRtt(__instance, value, out var skipOriginalSetter) || !skipOriginalSetter;
     }
@@ -336,7 +339,7 @@ internal static class NetworkRttPickPatch
 [HarmonyPatch(typeof(FRNetworkPlayer), nameof(FRNetworkPlayer.Network_info), MethodType.Setter)]
 internal static class NetworkInfoPickPatch
 {
-    static void Postfix(FRNetworkPlayer __instance)
+    private static void Postfix(FRNetworkPlayer __instance)
     {
         OnlineSelection.ApplyRemotePick(__instance);
     }

@@ -2,11 +2,11 @@ using Il2CppTMPro;
 using TFROnlineMenu.Utils;
 using UnityEngine;
 
-namespace TFROnlineMenu.Ui;
+namespace TFROnlineMenu.Home.UI;
 
 internal static class ProfilePanel
 {
-    static TextMeshProUGUI? _field;
+    private static TextMeshProUGUI? _field;
 
     internal static void Open()
     {
@@ -15,8 +15,6 @@ internal static class ProfilePanel
         go.transform.SetParent(root.transform, false);
         _field = go.AddComponent<TextMeshProUGUI>();
         var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 0.5f);
-        rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.sizeDelta = new Vector2(820f, 80f);
         rect.anchoredPosition = new Vector2(0f, 20f);
         _field.font = ModUiUtils.LoadTmpFont("Alphakind");
@@ -66,9 +64,9 @@ internal static class ProfilePanel
         }
     }
 
-    static void Confirm()
+    private static void Confirm()
     {
-        OnlineMenuMod.Instance.Nickname = _field.text;
+        OnlineMenuMod.Instance.Nickname = _field!.text;
         Release();
     }
 

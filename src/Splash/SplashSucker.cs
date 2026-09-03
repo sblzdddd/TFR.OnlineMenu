@@ -2,28 +2,29 @@ using HarmonyLib;
 using Il2Cpp;
 using Il2CppTMPro;
 using MelonLoader;
+using TFROnlineMenu.Utils;
 using UnityEngine;
 using UnityEngine.UI;
 using static UnityEngine.Object;
 
-namespace TFROnlineMenu.Utils;
+namespace TFROnlineMenu.Splash;
 
 internal static class SplashSucker
 {
-    const float SecondScreenHoldSeconds = 5f;
-    const float SecondScreenFadeOutSeconds = 1.25f;
-    const float VersionBand = 88f;
-    const float EdgePad = 20f;
+    private const float SecondScreenHoldSeconds = 5f;
+    private const float SecondScreenFadeOutSeconds = 1.25f;
+    private const float VersionBand = 88f;
+    private const float EdgePad = 20f;
 
-    static LemonAction? _syncAlpha;
-    static int _secondScreenPhase;
-    static float _holdUntil;
-    static float _fadeOutStart;
+    private static LemonAction? _syncAlpha;
+    private static int _secondScreenPhase;
+    private static float _holdUntil;
+    private static float _fadeOutStart;
 
     [HarmonyPatch(typeof(FRMain), nameof(FRMain.Start))]
     internal static class MainScreenSucker
     {
-        static void Postfix()
+        private static void Postfix()
         {
             GameObject.Find("Camera").GetComponent<Camera>().backgroundColor = Color.black;
             var loadingTmp = GameObject.Find("Text (TMP)").GetComponent<TextMeshProUGUI>();
@@ -50,9 +51,10 @@ internal static class SplashSucker
     [HarmonyPatch(typeof(SplashScript), nameof(SplashScript.Start))]
     internal static class SplashScreenSucker
     {
-        static void Postfix(SplashScript __instance)
+        private static void Postfix(SplashScript __instance)
         {
-            if (Application.isBatchMode) return;
+            LaunchArgs.EnsureParsed();
+            if (Application.isBatchMode || LaunchArgs.SkipSplash) return;
 
             var canvas = GameObject.Find("Canvas").transform;
             var noticeTmp = canvas.Find("Text (TMP)").gameObject.GetComponent<TextMeshProUGUI>();
@@ -118,7 +120,7 @@ internal static class SplashSucker
         }
     }
 
-    static void FuckSecondScreen(TextMeshProUGUI driver, CanvasGroup group, SplashScript splash)
+    private static void FuckSecondScreen(TextMeshProUGUI driver, CanvasGroup group, SplashScript splash)
     {
         if (_secondScreenPhase == 0)
         {
@@ -143,20 +145,25 @@ internal static class SplashSucker
             group.alpha = Mathf.Clamp01(1f - t);
             if (t < 1f) return;
 
-            MelonEvents.OnUpdate.Unsubscribe(_syncAlpha);
+            Unhook();
             splash.CancelInvoke();
             splash.EndSplash();
         }
     }
 
+    private static void Unhook()
+    {
+        if (_syncAlpha is null) return;
+        MelonEvents.OnUpdate.Unsubscribe(_syncAlpha);
+        _syncAlpha = null;
+    }
 
     [HarmonyPatch(typeof(SplashScript), nameof(SplashScript.EndSplash))]
     internal static class SplashSuckerFucker
     {
-
-        static void Prefix(SplashScript __instance)
+        private static void Prefix()
         {
-            MelonEvents.OnUpdate.Unsubscribe(_syncAlpha);
+            Unhook();
         }
     }
 }

@@ -1,9 +1,10 @@
 using Il2Cpp;
 using MelonLoader;
 using TFROnlineMenu.Patches;
+using TFROnlineMenu.Select;
 using UnityEngine;
 
-namespace TFROnlineMenu;
+namespace TFROnlineMenu.Race;
 
 /// <summary>
 /// Nothing in the shipped multiplayer tells a machine that a remote racer crossed the line, so
@@ -15,13 +16,14 @@ namespace TFROnlineMenu;
 /// </summary>
 internal static class RaceProgress
 {
-    const float PollInterval = 0.25f;
-    const float ResendInterval = 0.5f;
+    private const float PollInterval = 0.25f;
+    private const float ResendInterval = 0.5f;
 
-    static bool _localFinished;
-    static bool _forcedEnd;
-    static float _nextPoll;
-    static float _nextResend;
+    private static bool _localFinished;
+    private static bool _forcedEnd;
+    private static float _nextPoll;
+    private static float _nextResend;
+    private static MelonLogger.Instance LoggerInstance => OnlineMenuMod.Instance.LoggerInstance;
 
     internal static void BeginRace()
     {
@@ -91,7 +93,7 @@ internal static class RaceProgress
         }
 
         _forcedEnd = true;
-        MelonLogger.Msg("[Online] Every other racer finished; ending the local race so results can open.");
+        LoggerInstance.Msg("Every other racer finished; ending the local race so results can open.");
         racer.EndRace();
     }
 
@@ -99,7 +101,7 @@ internal static class RaceProgress
     /// Keeps re-sending until the flag comes back on our own replicated info, which is what the server
     /// echoes once it has accepted the command.
     /// </summary>
-    static void PublishFinish()
+    private static void PublishFinish()
     {
         if (Time.unscaledTime < _nextResend)
         {
@@ -116,7 +118,7 @@ internal static class RaceProgress
         RacerInfoSync.PushLocalFinish(true);
     }
 
-    static bool EveryPeerFinished()
+    private static bool EveryPeerFinished()
     {
         var local = FRNetworkPlayer.localPlayer;
         var peers = 0;
@@ -138,7 +140,7 @@ internal static class RaceProgress
         return peers > 0 && finished >= peers;
     }
 
-    static PlayerRacer? LocalRacer()
+    private static PlayerRacer? LocalRacer()
     {
         var humans = GameManager.players;
         if (humans is null)

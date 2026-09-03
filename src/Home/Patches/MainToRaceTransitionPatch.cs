@@ -1,23 +1,23 @@
 using HarmonyLib;
 using Il2Cpp;
-using TFROnlineMenu.Ui;
+using TFROnlineMenu.Home.UI;
 using UnityEngine.EventSystems;
 
-namespace TFROnlineMenu.Patches;
+namespace TFROnlineMenu.Home.Patches;
 
 [HarmonyPatch(typeof(MainToRaceTransition), nameof(MainToRaceTransition.BeginSequence))]
 internal static class MainToRaceBeginPatch
 {
-    static void Prefix()
+    private static void Prefix()
     {
-        var selected = EventSystem.current.currentSelectedGameObject;
+        var selected = EventSystem.current.currentSelectedGameObject ?? null;
+        if (selected is null) return;
+
         if (selected.name == "OnlineButton")
         {
             OnlineRaceMenu.Enter();
-            return;
         }
-
-        if (selected.name == "RaceButton")
+        else if (selected.name == "RaceButton")
         {
             OnlineRaceMenu.RestoreLabelsIfNeeded();
         }
@@ -27,11 +27,9 @@ internal static class MainToRaceBeginPatch
 [HarmonyPatch(typeof(MainToRaceTransition), nameof(MainToRaceTransition.ReverseBeginSequence))]
 internal static class MainToRaceReversePatch
 {
-    static void Postfix()
+    private static void Postfix()
     {
         if (OnlineRaceMenu.Active)
-        {
             OnlineRaceMenu.Exit();
-        }
     }
 }

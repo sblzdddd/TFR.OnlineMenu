@@ -1,13 +1,13 @@
 using HarmonyLib;
 using Il2Cpp;
-using TFROnlineMenu.Ui;
+using TFROnlineMenu.Home.UI;
 
-namespace TFROnlineMenu.Patches;
+namespace TFROnlineMenu.Home.Patches;
 
 [HarmonyPatch(typeof(MenuUIButton.__c__DisplayClass17_0), "_Awake_b__4")]
 internal static class MenuUIButtonSubmitPatch
 {
-    static void Prefix(MenuUIButton.__c__DisplayClass17_0 __instance)
+    private static void Prefix(MenuUIButton.__c__DisplayClass17_0 __instance)
     {
         var name = __instance.__4__this.gameObject.name;
         if (name == "OnlineButton")

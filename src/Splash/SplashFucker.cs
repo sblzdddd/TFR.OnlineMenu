@@ -1,18 +1,20 @@
 ﻿using HarmonyLib;
 using Il2Cpp;
 using MelonLoader;
+using TFROnlineMenu.Utils;
 using UnityEngine;
 
-namespace TFROnlineMenu.Utils;
+namespace TFROnlineMenu.Splash;
 
 [HarmonyPatch(typeof(SplashScript), nameof(SplashScript.Start))]
 internal static class SplashFucker
 {
-    static LemonAction? _fuck;
+    private static LemonAction? _fuck;
 
-    static void Postfix(SplashScript __instance)
+    private static void Postfix(SplashScript __instance)
     {
-        if (Application.isBatchMode)
+        LaunchArgs.EnsureParsed();
+        if (Application.isBatchMode || LaunchArgs.SkipSplash)
         {
             __instance.CancelInvoke();
             __instance.EndSplash();
@@ -23,7 +25,7 @@ internal static class SplashFucker
         MelonEvents.OnUpdate.Subscribe(_fuck);
     }
 
-    static void Fuck(SplashScript splash)
+    private static void Fuck(SplashScript splash)
     {
         if (!splash) UnFuck();
         if (!Input.anyKeyDown) return;
@@ -31,7 +33,7 @@ internal static class SplashFucker
         splash.EndSplash();
     }
 
-    static void UnFuck()
+    private static void UnFuck()
     {
         if (_fuck is null) return;
         MelonEvents.OnUpdate.Unsubscribe(_fuck);

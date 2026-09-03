@@ -1,7 +1,8 @@
 using HarmonyLib;
 using Il2Cpp;
+using TFROnlineMenu.Patches;
 
-namespace TFROnlineMenu.Patches;
+namespace TFROnlineMenu.Race;
 
 /// <summary>
 /// <c>FRNetGameState.OnNetGameStart</c> discards the roster the server sent, rebuilds one from the spawned
@@ -14,7 +15,7 @@ namespace TFROnlineMenu.Patches;
 [HarmonyPatch(typeof(FRNetGameState), nameof(FRNetGameState.OnNetGameStart))]
 internal static class NetGameRosterPatch
 {
-    static void Postfix()
+    private static void Postfix()
     {
         // The handler is a no-op unless a client is running, and lastSettings would still hold an
         // unrelated offline race in that case.
@@ -58,7 +59,7 @@ internal static class NetGameRosterPatch
 [HarmonyPatch(typeof(PlayerRacer), nameof(PlayerRacer.EndRace))]
 internal static class PlayerRacerEndRacePatch
 {
-    static void Postfix(PlayerRacer __instance)
+    private static void Postfix(PlayerRacer __instance)
     {
         RaceProgress.NotifyRacerEnded(__instance);
     }

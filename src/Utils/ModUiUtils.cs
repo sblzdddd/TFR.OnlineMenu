@@ -9,9 +9,10 @@ namespace TFROnlineMenu.Utils;
 
 internal static class ModUiUtils
 {
-    static readonly Dictionary<string, TMP_FontAsset> FontCache = new(StringComparer.OrdinalIgnoreCase);
-    static readonly Dictionary<string, Sprite> SpriteCache = new(StringComparer.OrdinalIgnoreCase);
-    static string? _modVersion;
+    private static readonly Dictionary<string, TMP_FontAsset> FontCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, Sprite> SpriteCache = new(StringComparer.OrdinalIgnoreCase);
+    private static string? _modVersion;
+    private static MelonLogger.Instance LoggerInstance => OnlineMenuMod.Instance.LoggerInstance;
 
     public static string GetModVersion()
     {
@@ -67,7 +68,7 @@ internal static class ModUiUtils
             }
             catch (Exception ex)
             {
-                MelonLogger.Warning($"[ModUiUtils] font Addressables load failed ({address}): {ex.Message}");
+                LoggerInstance.Warning($"[ModUiUtils] font Addressables load failed ({address}): {ex.Message}");
             }
         }
 
@@ -95,7 +96,7 @@ internal static class ModUiUtils
         using var stream = OpenEmbeddedResource(assembly, key);
         if (stream is null)
         {
-            MelonLogger.Warning($"[ModUiUtils] embedded image not found: {key}");
+            LoggerInstance.Warning($"[ModUiUtils] embedded image not found: {key}");
             return null;
         }
 
@@ -116,7 +117,7 @@ internal static class ModUiUtils
         if (!ImageConversion.LoadImage(texture, bytes))
         {
             UnityEngine.Object.Destroy(texture);
-            MelonLogger.Warning($"[ModUiUtils] failed to decode embedded image: {key}");
+            LoggerInstance.Warning($"[ModUiUtils] failed to decode embedded image: {key}");
             return null;
         }
 
@@ -139,7 +140,7 @@ internal static class ModUiUtils
         return sprite;
     }
 
-    static Stream? OpenEmbeddedResource(Assembly assembly, string resourceName)
+    private static Stream? OpenEmbeddedResource(Assembly assembly, string resourceName)
     {
         var direct = assembly.GetManifestResourceStream(resourceName);
         if (direct is not null)
@@ -161,7 +162,7 @@ internal static class ModUiUtils
         return null;
     }
 
-    static TMP_FontAsset? FindLoadedTmpFont(string name)
+    private static TMP_FontAsset? FindLoadedTmpFont(string name)
     {
         TMP_FontAsset? containsMatch = null;
         var fonts = Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
@@ -192,7 +193,7 @@ internal static class ModUiUtils
         return containsMatch;
     }
 
-    static IEnumerable<string> BuildFontAddresses(string name)
+    private static IEnumerable<string> BuildFontAddresses(string name)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var candidate in EnumerateFontAddressCandidates(name))
@@ -204,7 +205,7 @@ internal static class ModUiUtils
         }
     }
 
-    static IEnumerable<string> EnumerateFontAddressCandidates(string name)
+    private static IEnumerable<string> EnumerateFontAddressCandidates(string name)
     {
         yield return $"Assets/Fonts/{name}.asset";
 
