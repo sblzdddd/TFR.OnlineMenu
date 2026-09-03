@@ -36,42 +36,21 @@ internal static class OnlineSelection
         get
         {
             var local = FRNetworkPlayer.localPlayer;
-            return local ? SlotOf(local) : 0;
+            return local ? SlotOf(local) : -1;
         }
     }
 
     internal static bool IsOnlineSession =>
         NetworkServer.active || NetworkClient.active;
 
-    internal static bool ShouldStayInSession
-    {
-        get
-        {
-            if (_leaving || !IsOnlineSession)
-            {
-                return false;
-            }
-
-            if (IsActive || _entering || _followSelection)
-            {
-                return true;
-            }
-
-            return IsLobbyScene(SceneManager.GetActiveScene().name);
-        }
-    }
+    internal static bool ShouldStayInSession =>
+        !_leaving && IsOnlineSession &&
+        (IsActive || _entering || _followSelection || IsLobbyScene(SceneManager.GetActiveScene().name));
 
     internal static void BeginFromHost()
     {
         if (!NetworkServer.active)
         {
-            return;
-        }
-
-        var manager = FRNetworkManager.instancia;
-        if (!manager)
-        {
-            OnlineMenuMod.Instance.Message = "FRNetworkManager is not available.";
             return;
         }
 
@@ -133,12 +112,12 @@ internal static class OnlineSelection
             return;
         }
 
+        _startingRace = true;
         if (menu && menu._currentModule is not null)
         {
             menu._currentModule.End();
         }
 
-        _startingRace = true;
         var props = new GameModeManager.SGameModeProperties
         {
             _cup = menu._cup,
@@ -168,8 +147,7 @@ internal static class OnlineSelection
         }
 
         var menu = MainMenuManager.instance;
-        var levels = LevelManager.instance;
-        if (!menu || !levels)
+        if (!menu)
         {
             return;
         }
@@ -210,8 +188,7 @@ internal static class OnlineSelection
 
     internal static void HandleSceneInitialized(string sceneName)
     {
-        if (sceneName.Equals("menu2", StringComparison.OrdinalIgnoreCase) ||
-            sceneName.Equals("mainscene", StringComparison.OrdinalIgnoreCase))
+        if (IsMainMenu(sceneName))
         {
             _entering = false;
             _slotsReady = false;
@@ -284,28 +261,30 @@ internal static class OnlineSelection
             return;
         }
 
-        var count = GetNetworkPlayers().Count;
+        var players = GetNetworkPlayers();
+        var count = Math.Min(players.Count, MaxSlots);
         if (!_slotsReady || count != _lastCount)
         {
             try
             {
-                ApplySlots();
+                ApplySlots(players);
             }
             catch (Exception exception)
             {
                 MelonLogger.Warning($"[Online] ApplySlots: {exception.Message}");
                 _slotsReady = true;
-                _lastCount = Math.Clamp(count, 1, MaxSlots);
+                _lastCount = count;
             }
         }
-
-        ApplyAllRemotePicks();
+        else
+        {
+            ApplyAllRemotePicks(players);
+        }
     }
 
     static void WatchDisconnect()
     {
-        var online = NetworkServer.active || NetworkClient.active;
-        if (online)
+        if (IsOnlineSession)
         {
             _hadSession = true;
             _offlineAt = -1;
@@ -338,8 +317,7 @@ internal static class OnlineSelection
         }
 
         var scene = SceneManager.GetActiveScene().name;
-        if (scene.Equals("menu2", StringComparison.OrdinalIgnoreCase) ||
-            scene.Equals("mainscene", StringComparison.OrdinalIgnoreCase))
+        if (IsMainMenu(scene))
         {
             _returningToMenu = false;
             return;
@@ -363,21 +341,17 @@ internal static class OnlineSelection
         }
     }
 
-    static bool IsLoadingScene(string scene)
-    {
-        if (scene.Equals("loading", StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
+    static bool IsMainMenu(string scene) =>
+        scene.Equals("menu2", StringComparison.OrdinalIgnoreCase) ||
+        scene.Equals("mainscene", StringComparison.OrdinalIgnoreCase);
 
-        var levels = LevelManager.instance;
-        return levels && levels.isLoading;
-    }
+    static bool IsLoadingScene(string scene) =>
+        scene.Equals("loading", StringComparison.OrdinalIgnoreCase) ||
+        LevelManager.instance && LevelManager.instance.isLoading;
 
     static bool IsLobbyScene(string scene)
     {
-        return scene.Equals("menu2", StringComparison.OrdinalIgnoreCase) ||
-               scene.Equals("mainscene", StringComparison.OrdinalIgnoreCase) ||
+        return IsMainMenu(scene) ||
                scene.Equals("splash", StringComparison.OrdinalIgnoreCase) ||
                scene.Equals("loading", StringComparison.OrdinalIgnoreCase) ||
                scene.Equals(SelectionScene, StringComparison.OrdinalIgnoreCase) ||
@@ -466,21 +440,11 @@ internal static class OnlineSelection
 
     static bool HostSignalsLobby()
     {
-        var local = FRNetworkPlayer.localPlayer;
-        foreach (var player in GetNetworkPlayers())
-        {
-            if (!player || player == local)
-            {
-                continue;
-            }
-
-            if (TFROnlineMenu.Patches.RacerInfoSync.DecodeLobby(player.Network_info._racerInfo._character))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        // Mirror assigns netIds in spawn order, so the host owns the first player identity.
+        var players = GetNetworkPlayers();
+        return players.Count > 0 &&
+               TFROnlineMenu.Patches.RacerInfoSync.DecodeLobby(
+                   players[0].Network_info._racerInfo._character);
     }
 
     internal static void NotifyRaceStarting()
@@ -492,10 +456,7 @@ internal static class OnlineSelection
         _entering = false;
     }
 
-    internal static void BeginRace(string _)
-    {
-        NotifyRaceStarting();
-    }
+    internal static void BeginRace(string _) => NotifyRaceStarting();
 
     internal static void MarkPeerConfirmed(uint netId, bool confirmed)
     {
@@ -534,14 +495,6 @@ internal static class OnlineSelection
         return total >= 2 && confirmed >= total;
     }
 
-    static bool LocalConfirmed()
-    {
-        var behaviour = UnityEngine.Object.FindObjectOfType<CharacterSelectionBehaviour>();
-        var boxes = behaviour ? behaviour._boxes : null;
-        var slot = LocalSlot;
-        return boxes is not null && slot >= 0 && slot < boxes.Length && boxes[slot] && boxes[slot].ready;
-    }
-
     /// <summary>
     /// The character module is the only place the local player can toggle ready, and its UI is torn down once
     /// the cup module takes over. Latch the last value instead of reading a dead UI, otherwise the local
@@ -549,9 +502,12 @@ internal static class OnlineSelection
     /// </summary>
     internal static bool RefreshLocalConfirmed()
     {
-        if (UnityEngine.Object.FindObjectOfType<CharacterSelectionBehaviour>())
+        var behaviour = UnityEngine.Object.FindObjectOfType<CharacterSelectionBehaviour>();
+        var boxes = behaviour ? behaviour._boxes : null;
+        var slot = LocalSlot;
+        if (boxes is not null && slot >= 0 && slot < boxes.Length && boxes[slot])
         {
-            _localConfirmed = LocalConfirmed();
+            _localConfirmed = boxes[slot].ready;
         }
 
         return _localConfirmed;
@@ -598,7 +554,11 @@ internal static class OnlineSelection
         ConfirmedPeers.RemoveWhere(id => !live.Contains(id));
     }
 
-    internal static void LeaveSession(string reason)
+    internal static void LeaveSession(string reason) => EndSession(reason, stopNetwork: true);
+
+    internal static void HandleDisconnect() => EndSession("Disconnected from host.", stopNetwork: false);
+
+    static void EndSession(string reason, bool stopNetwork)
     {
         if (_leaving)
         {
@@ -606,53 +566,22 @@ internal static class OnlineSelection
         }
 
         _leaving = true;
-        _followSelection = false;
         _returningToMenu = true;
         _returnToMenuAt = Time.unscaledTime + ReturnToMenuRetry;
         Stop();
+
+        if (stopNetwork && IsOnlineSession)
+        {
+            OnlineMenuMod.Instance.StopNetwork();
+        }
+
         var scene = SceneManager.GetActiveScene().name;
-        var stayOnMenu = scene.Equals("menu2", StringComparison.OrdinalIgnoreCase) ||
-                         scene.Equals("mainscene", StringComparison.OrdinalIgnoreCase);
-        try
-        {
-            if (IsOnlineSession)
-            {
-                OnlineMenuMod.Instance.StopNetwork();
-            }
-        }
-        finally
-        {
-            if (!stayOnMenu && LevelManager.instance)
-            {
-                LevelManager.instance.LoadMainMenu();
-            }
-
-            OnlineMenuMod.Instance.Message = reason;
-            _leaving = false;
-        }
-    }
-
-    internal static void HandleDisconnect()
-    {
-        if (_leaving)
-        {
-            return;
-        }
-
-        _leaving = true;
-        _followSelection = false;
-        _returningToMenu = true;
-        _returnToMenuAt = Time.unscaledTime + ReturnToMenuRetry;
-        Stop();
-        var scene = SceneManager.GetActiveScene().name;
-        if (!scene.Equals("menu2", StringComparison.OrdinalIgnoreCase) &&
-            !scene.Equals("mainscene", StringComparison.OrdinalIgnoreCase) &&
-            LevelManager.instance)
+        if (!IsMainMenu(scene) && LevelManager.instance)
         {
             LevelManager.instance.LoadMainMenu();
         }
 
-        OnlineMenuMod.Instance.Message = "Disconnected from host.";
+        OnlineMenuMod.Instance.Message = reason;
         _leaving = false;
     }
 
@@ -696,10 +625,13 @@ internal static class OnlineSelection
 
     internal static void ApplyRemotePick(FRNetworkPlayer player, int character, int skin, int vehicle, bool ready = false)
     {
-        if (!player || !IsActive)
+        if (!player || !IsActive || character < 0)
         {
             return;
         }
+
+        skin = Math.Max(skin, 0);
+        vehicle = Math.Max(vehicle, 0);
 
         var slot = SlotOf(player);
         if (slot < 0 || slot == LocalSlot)
@@ -725,9 +657,9 @@ internal static class OnlineSelection
         var box = boxes is not null && slot < boxes.Length ? boxes[slot] : null;
         if (LastRemotePicks.TryGetValue(player.netId, out var previous) && previous == pick)
         {
-            if (box && box.ready != ready)
+            if (box && box!.ready != ready)
             {
-                box._ready = ready;
+                box!._ready = ready;
             }
 
             return;
@@ -745,16 +677,15 @@ internal static class OnlineSelection
         behaviour.RefreshMatching(slot, human, character, skin, vehicle);
         if (box)
         {
-            box._ready = ready;
+            box!._ready = ready;
         }
     }
 
     internal static List<FRNetworkPlayer> GetNetworkPlayers()
     {
         var result = new List<FRNetworkPlayer>();
-        var seen = new HashSet<uint>();
         var server = FRNetworkServer.instance;
-        if (server)
+        if (NetworkServer.active && server)
         {
             var players = server.GetPlayers();
             if (players is not null)
@@ -762,7 +693,7 @@ internal static class OnlineSelection
                 foreach (var pair in players)
                 {
                     var player = pair.Value;
-                    if (player && seen.Add(player.netId))
+                    if (player && player.netId != 0)
                     {
                         result.Add(player);
                     }
@@ -770,43 +701,37 @@ internal static class OnlineSelection
             }
         }
 
-        var found = UnityEngine.Object.FindObjectsOfType<FRNetworkPlayer>(true);
-        if (found is not null)
+        else
         {
-            foreach (var player in found)
+            var found = UnityEngine.Object.FindObjectsOfType<FRNetworkPlayer>(true);
+            if (found is not null)
             {
-                if (player && seen.Add(player.netId))
+                foreach (var player in found)
                 {
-                    result.Add(player);
+                    if (player && player.netId != 0)
+                    {
+                        result.Add(player);
+                    }
                 }
             }
         }
 
-        result.Sort(static (left, right) =>
-        {
-            var leftHost = NetworkServer.active && left == FRNetworkPlayer.localPlayer;
-            var rightHost = NetworkServer.active && right == FRNetworkPlayer.localPlayer;
-            if (leftHost != rightHost)
-            {
-                return leftHost ? -1 : 1;
-            }
-
-            return left.netId.CompareTo(right.netId);
-        });
+        result.Sort(static (left, right) => left.netId.CompareTo(right.netId));
         return result;
     }
 
     internal static int ConnectedCount => GetNetworkPlayers().Count;
 
-    static int SlotOf(FRNetworkPlayer player)
+    static int SlotOf(FRNetworkPlayer player, List<FRNetworkPlayer>? players = null)
     {
         if (!player)
         {
             return -1;
         }
 
+        players ??= GetNetworkPlayers();
         var index = 0;
-        foreach (var candidate in GetNetworkPlayers())
+        foreach (var candidate in players)
         {
             if (candidate == player)
             {
@@ -819,7 +744,7 @@ internal static class OnlineSelection
         return -1;
     }
 
-    static void ApplySlots()
+    static void ApplySlots(List<FRNetworkPlayer>? netPlayers = null)
     {
         var behaviour = UnityEngine.Object.FindObjectOfType<CharacterSelectionBehaviour>();
         if (!behaviour)
@@ -827,8 +752,9 @@ internal static class OnlineSelection
             return;
         }
 
-        var netPlayers = GetNetworkPlayers();
+        netPlayers ??= GetNetworkPlayers();
         var local = FRNetworkPlayer.localPlayer;
+        var localSlot = local ? SlotOf(local, netPlayers) : -1;
         for (var index = 0; index < MaxSlots; index++)
         {
             if (index < netPlayers.Count)
@@ -859,8 +785,7 @@ internal static class OnlineSelection
             }
         }
 
-        OnlineMenuMod.Instance.EnsureSelectionInput(LocalSlot);
-        SanitizeAllJoinedPicks();
+        OnlineMenuMod.Instance.EnsureSelectionInput();
         if (!behaviour._inited)
         {
             try
@@ -870,33 +795,15 @@ internal static class OnlineSelection
             catch (Exception exception)
             {
                 MelonLogger.Warning($"[Online] CharacterSelectionBehaviour.Loaded: {exception.Message}");
-                RefreshJoinedBoxes(behaviour);
             }
         }
-        else
-        {
-            RefreshJoinedBoxes(behaviour);
-        }
 
-        HideRemoteSelectors();
+        RefreshJoinedBoxes(behaviour);
+        HideRemoteSelectors(behaviour, localSlot);
         _slotsReady = true;
-        _lastCount = Math.Clamp(netPlayers.Count, 1, MaxSlots);
+        _lastCount = Math.Min(netPlayers.Count, MaxSlots);
         LastRemotePicks.Clear();
-        ApplyAllRemotePicks();
-    }
-
-    static void SanitizeAllJoinedPicks()
-    {
-        var humans = GameManager.players;
-        if (humans is null)
-        {
-            return;
-        }
-
-        for (var index = 0; index < humans.Length; index++)
-        {
-            SanitizeHumanPick(humans[index]);
-        }
+        ApplyAllRemotePicks(netPlayers);
     }
 
     static void SanitizeHumanPick(HumanGamePlayer? human)
@@ -917,33 +824,35 @@ internal static class OnlineSelection
     {
         var humans = GameManager.players;
         var boxes = behaviour._boxes;
-        if (humans is null || boxes is null)
+        if (boxes is null)
         {
             return;
         }
 
-        var count = Math.Min(humans.Length, boxes.Length);
-        for (var index = 0; index < count; index++)
+        for (var index = 0; index < boxes.Length; index++)
         {
-            var human = humans[index];
             var box = boxes[index];
             if (!box)
             {
                 continue;
             }
 
+            var human = humans is not null && index < humans.Length ? humans[index] : null;
             if (human is not null && human._joined)
             {
                 box.Join();
                 behaviour.RefreshMatching(index, human, human.character, human.skin, human.vehicle);
             }
+            else
+            {
+                box.Leave();
+            }
         }
     }
 
-    static void HideRemoteSelectors()
+    static void HideRemoteSelectors(CharacterSelectionBehaviour behaviour, int localSlot)
     {
-        var behaviour = UnityEngine.Object.FindObjectOfType<CharacterSelectionBehaviour>();
-        if (!behaviour || behaviour._selectors is null)
+        if (behaviour._selectors is null)
         {
             return;
         }
@@ -956,13 +865,13 @@ internal static class OnlineSelection
                 continue;
             }
 
-            selector.gameObject.SetActive(index == LocalSlot);
+            selector.gameObject.SetActive(index == localSlot);
         }
     }
 
-    static void ApplyAllRemotePicks()
+    static void ApplyAllRemotePicks(IEnumerable<FRNetworkPlayer>? players = null)
     {
-        foreach (var player in GetNetworkPlayers())
+        foreach (var player in players ?? GetNetworkPlayers())
         {
             ApplyRemotePick(player);
         }

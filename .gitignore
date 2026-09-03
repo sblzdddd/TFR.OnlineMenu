@@ -10,3 +10,11 @@ wheels/
 .venv
 obj/
 bin/
+
+# IDE-local project settings
+*.csproj.user
+
+# Managed outside this workspace
+/AGENTS.md
+/README.md
+/TFR.OnlineMenu.csproj
