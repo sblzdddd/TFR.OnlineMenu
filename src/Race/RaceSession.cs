@@ -3,6 +3,7 @@ using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using MelonLoader;
 using TFROnlineMenu.Home.UI;
 using TFROnlineMenu.Select;
+using TFROnlineMenu.Transport;
 using UnityEngine;
 
 namespace TFROnlineMenu.Race;
@@ -14,7 +15,7 @@ internal static class RaceSession
 
     internal static void StartRaceFromSelection(GameModeManager.SGameModeProperties props)
     {
-        var netPlayers = OnlineSelection.GetNetworkPlayers();
+        var netPlayers = SelectionRoster.GetPlayers();
         if (netPlayers.Count < 2)
         {
             LoggerInstance.Error($"At least two players are required to start an online race (found {netPlayers.Count}).");
@@ -47,10 +48,8 @@ internal static class RaceSession
             var netPlayer = netPlayers[index];
             var mp = new GameMPPlayer();
             mp.InitMP(netPlayer);
-            var info = netPlayer.Network_info._racerInfo;
-            Patches.RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
-                out var character, out var skin, out var vehicle, out _);
-            if (character >= 0)
+            if (PlayerStatusSync.TryGetPick(netPlayer, out var character, out var skin, out var vehicle, out _) &&
+                character >= 0)
             {
                 mp.character = character;
                 mp.skin = skin;

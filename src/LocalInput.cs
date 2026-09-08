@@ -192,7 +192,7 @@ internal static class LocalHumanIndex
             return;
         }
 
-        var slot = OnlineSelection.LocalSlot;
+        var slot = SelectionRoster.LocalSlot;
         if (slot >= 0)
         {
             humanIndex = slot;

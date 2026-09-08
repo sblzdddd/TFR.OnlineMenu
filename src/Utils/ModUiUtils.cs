@@ -114,7 +114,7 @@ internal static class ModUiUtils
         }
 
         var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-        if (!ImageConversion.LoadImage(texture, bytes))
+        if (!texture.LoadImage(bytes))
         {
             UnityEngine.Object.Destroy(texture);
             LoggerInstance.Warning($"[ModUiUtils] failed to decode embedded image: {key}");
@@ -173,10 +173,7 @@ internal static class ModUiUtils
 
         foreach (var font in fonts)
         {
-            if (!font || font.name is null)
-            {
-                continue;
-            }
+            if (!font) continue;
 
             if (font.name.Equals(name, StringComparison.OrdinalIgnoreCase))
             {

@@ -18,7 +18,7 @@ public sealed partial class OnlineMenuMod
             return;
         }
 
-        if (Il2CppMirror.NetworkClient.active && !RaceSession.EnsureNetworkGameMode(sceneName, OnlineSelection.ConnectedCount))
+        if (Il2CppMirror.NetworkClient.active && !RaceSession.EnsureNetworkGameMode(sceneName, SelectionRoster.Count))
         {
             LoggerInstance.Error("Failed to ensure network game mode.");
         }

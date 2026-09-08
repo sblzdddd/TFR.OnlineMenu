@@ -14,7 +14,7 @@ internal static class MainMenuOnSceneLoadedPatch
     {
         if (__instance._startModule is null)
         {
-            OnlineSelection.InstallSelectionSequence(__instance);
+            SelectionSlots.InstallSequence(__instance);
         }
 
         if (__instance._startModule is not null)
@@ -70,7 +70,7 @@ internal static class MirrorClientChangeScenePatch
     private static bool Prefix(string newSceneName)
     {
         if (string.IsNullOrEmpty(newSceneName) ||
-            !newSceneName.Equals(OnlineSelection.SelectionScene, StringComparison.OrdinalIgnoreCase))
+            !newSceneName.Equals(SelectionScenes.Selection, StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
@@ -128,7 +128,7 @@ internal static class CharacterSelectionUpdatePatch
         }
 
         var boxes = __instance._boxes;
-        var slot = OnlineSelection.LocalSlot;
+        var slot = SelectionRoster.LocalSlot;
         if (boxes is null || slot < 0 || slot >= boxes.Length || !boxes[slot] || !boxes[slot].ready)
         {
             return false;

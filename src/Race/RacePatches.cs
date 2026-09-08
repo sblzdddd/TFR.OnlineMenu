@@ -1,6 +1,6 @@
 using HarmonyLib;
 using Il2Cpp;
-using TFROnlineMenu.Patches;
+using TFROnlineMenu.Transport;
 
 namespace TFROnlineMenu.Race;
 
@@ -46,9 +46,14 @@ internal static class NetGameRosterPatch
                 continue;
             }
 
-            var info = netPlayer.Network_info._racerInfo;
-            RacerInfoSync.DecodePick(info._character, info._skin, info._vehicle,
-                out var character, out var skin, out var vehicle, out _);
+            if (!PlayerStatusSync.TryGetPick(netPlayer, out var character, out var skin, out var vehicle, out _))
+            {
+                var info = netPlayer.Network_info._racerInfo;
+                character = info._character;
+                skin = info._skin;
+                vehicle = info._vehicle;
+            }
+
             entry.character = Math.Max(character, 0);
             entry.skin = Math.Max(skin, 0);
             entry.vehicle = Math.Max(vehicle, 0);

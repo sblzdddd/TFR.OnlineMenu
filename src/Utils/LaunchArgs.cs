@@ -10,10 +10,6 @@ internal enum LaunchAutoMode
     Join,
 }
 
-/// <summary>
-/// Shared launch switches: <c>--tfr-res</c>, <c>--tfr-pos</c>, <c>--tfr-skip-splash</c>,
-/// <c>--tfr-host</c>, <c>--tfr-join</c> (optional address, default 127.0.0.1).
-/// </summary>
 internal static class LaunchArgs
 {
     private static bool _parsed;
