@@ -1,5 +1,6 @@
 using Il2Cpp;
 using Il2CppMirror;
+using MelonLoader;
 using TFROnlineMenu.Select;
 using TFROnlineMenu.Transport.Messages;
 
@@ -11,6 +12,7 @@ internal static class PlayerStatusSync
     private static FumoStatesMsg _lastLocal;
     private static (int Character, int Skin, int Vehicle, bool Ready, bool InLobby)? _lastPushed;
     private static bool _advertiseLobby;
+    private static MelonLogger.Instance Logger => OnlineMenuMod.Instance.LoggerInstance;
 
     internal static void Reset()
     {
@@ -28,7 +30,7 @@ internal static class PlayerStatusSync
         }
 
         _advertiseLobby = inLobby;
-        OnlineMenuMod.Instance.LoggerInstance.Msg($"lobby advertised={inLobby}");
+        Logger.Msg($"lobby advertised={inLobby}");
         PushLocal();
     }
 
@@ -129,8 +131,8 @@ internal static class PlayerStatusSync
 
             Store(msg);
             Apply(msg);
-            OnlineMenuMod.Instance.LoggerInstance.Msg(
-                $"server status net={msg.NetId} char={msg.Character} ready={msg.Ready} lobby={msg.InLobby} fin={msg.Finished}");
+            Logger.Msg(
+                $"server status net={msg.NetId} char={msg.Character} skin={msg.Skin} ready={msg.Ready} lobby={msg.InLobby} fin={msg.Finished}");
             var snapshot = msg;
             FumoTransport.Relay(FumoPacket.Kind.PlayerStatus, writer => snapshot.Serialize(writer), connection);
             return;
@@ -143,7 +145,7 @@ internal static class PlayerStatusSync
 
         Store(msg);
         Apply(msg);
-        OnlineMenuMod.Instance.LoggerInstance.Msg(
+        Logger.Msg(
             $"client status net={msg.NetId} char={msg.Character} ready={msg.Ready} lobby={msg.InLobby} fin={msg.Finished}");
     }
 
@@ -197,8 +199,8 @@ internal static class PlayerStatusSync
     {
         Store(msg);
         _lastLocal = msg;
-        OnlineMenuMod.Instance.LoggerInstance.Msg(
-            $"publish net={msg.NetId} char={msg.Character} ready={msg.Ready} lobby={msg.InLobby} fin={msg.Finished}");
+        Logger.Msg(
+            $"publish net={msg.NetId} char={msg.Character} skin={msg.Skin} ready={msg.Ready} lobby={msg.InLobby} fin={msg.Finished}");
         var snapshot = msg;
         FumoTransport.Send(FumoPacket.Kind.PlayerStatus, writer => snapshot.Serialize(writer));
     }

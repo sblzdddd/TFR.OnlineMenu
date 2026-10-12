@@ -1,26 +1,17 @@
 using Il2Cpp;
+using MelonLoader;
 using TFROnlineMenu.Transport;
-using UnityEngine;
 using static UnityEngine.Object;
 
 namespace TFROnlineMenu.Select;
 
 internal static class SelectionSlots
 {
-    internal const int Max = 4;
-
+    private const int Max = 4;
     private static bool _ready;
     private static int _lastCount;
     private static readonly Dictionary<uint, (int Character, int Skin, int Vehicle)> LastRemotePicks = new();
-
-    private static readonly string[] SlotUiMap =
-    {
-        "CharacterSlot (6)", "CharacterSlot (15)", "CharacterSlot (32)", "CharacterSlot (10)", "CharacterSlot (2)",
-        "CharacterSlot (31)", "CharacterSlot (1)", "CharacterSlot (27)", "CharacterSlot (30)", "CharacterSlot (17)",
-        "CharacterSlot (16)", "CharacterSlot", "CharacterSlot (12)", "CharacterSlot (26)", "CharacterSlot (28)",
-        "CharacterSlot (3)", "CharacterSlot (5)", "CharacterSlot (18)", "CharacterSlot (7)", "CharacterSlot (11)",
-        "CharacterSlot (29)", "CharacterSlot (8)", "CharacterSlot (13)", "CharacterSlot (9)",
-    };
+    private static MelonLogger.Instance Logger => OnlineMenuMod.Instance.LoggerInstance;
 
     internal static void Reset()
     {
@@ -117,14 +108,6 @@ internal static class SelectionSlots
         }
 
         behaviour.RefreshMatching(slot, human, character, skin, vehicle);
-        if (character < SlotUiMap.Length)
-        {
-            var slotUi = GameObject.Find(SlotUiMap[character]);
-            if (slotUi is not null)
-            {
-                behaviour.SelectCharacter(slotUi.GetComponent<CharacterSlotUI>(), slot);
-            }
-        }
 
         if (box is not null && box)
         {
@@ -220,6 +203,7 @@ internal static class SelectionSlots
         {
             return;
         }
+
 
         if (PlayerStatusSync.TryGetPick(netPlayer, out var character, out var skin, out var vehicle, out _))
         {
